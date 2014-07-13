@@ -341,3 +341,7 @@ test.ks.obc <- function(x, y) {
 }
 
 
+new.perm <- function(x,y){
+  z <- x + y
+  return(z)
+}
