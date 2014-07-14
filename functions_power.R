@@ -133,8 +133,7 @@ ks.res.simp <- function(x, y, ..., alternative = c("two.sided", "less", "greater
   return(STATISTIC)
 }
 
-CvMTwoSamp.res <- function (S1, S2) 
-{
+CvMTwoSamp.res <- function (S1, S2) {
   sortx = sort(S1)
   lenx = length(sortx)
   sorty = sort(S2)
