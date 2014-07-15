@@ -1,0 +1,1 @@
+# One Sample Power Code
