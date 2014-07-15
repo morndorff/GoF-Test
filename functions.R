@@ -330,7 +330,7 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   require(gtools)
   lenx <- length(x)
     # Calculate TS for the ACTUAL data
-  ts.obs <- f(x, y)
+  ts.obs <- f(x, y,...)
   ts.random <- vector(mode="numeric",length=num.perm)
   # Two sample
   if(is.numeric(y)){
@@ -370,10 +370,10 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   #if (is.function(y)){
   if(is.character(y)){
     ry <- dist.conv(funname=y, type="r")
-    
-    for ( i in 1:num.perm){
+    y <- get(y, mode = "function", envir = parent.frame())
+    for (i in 1:num.perm){
       z <- ry(lenx,...)
-      ts.random[i] <- f(x,y)
+      ts.random[i] <- f(z,y,...)
     }
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
     c.val <- quantile(ts.random, probs = 0.95)
@@ -383,7 +383,7 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
       return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
     }
   }
-   
+  
 }
 # This code snippet allows us to take in a function argument such as qgamma
 
