@@ -85,7 +85,6 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
     }
 }
 
-
 myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     # Computes maximum difference of quantiles Args: x: A vector of observations for a R.V. (must be
     # numeric) y: Either (1) Another vector of observations (two sample) (2) A quantile function such as

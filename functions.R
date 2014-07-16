@@ -172,7 +172,7 @@ tri.area <- function(x, y, z) {
 }
 myts.max <- function(x, y) {
     obc.stat <- myts(x, y)
-    ks.stat <- ks.res(x, y)$statistic
+    ks.stat <- ks.res.simp(x, y)
     if (obc.stat > ks.stat) {
         z <- list(obc.stat, c("OBC"))
     } else if (ks.stat > obc.stat) {
@@ -183,7 +183,7 @@ myts.max <- function(x, y) {
 }
 myts.max.simp <- function(x, y) {
     obc.stat <- myts(x, y)
-    ks.stat <- ks.res(x, y)$statistic
+    ks.stat <- ks.res(x, y)
     if (obc.stat > ks.stat) {
         z <- obc.stat
     } else if (ks.stat > obc.stat) {
@@ -197,7 +197,7 @@ myts.max.range <- function(x, y) {
     com <- c(x, y)
     range <- max(com) - min(com)
     obc.stat <- myts(x, y)/range
-    ks.stat <- ks.res(x, y)$statistic
+    ks.stat <- ks.res(x, y)
     if (obc.stat > ks.stat) {
         z <- list(obc.stat, c("OBC"))
     } else if (ks.stat > obc.stat) {
@@ -211,7 +211,7 @@ myts.max.range.simp <- function(x, y) {
     com <- c(x, y)
     range <- max(com) - min(com)
     obc.stat <- myts(x, y)/range
-    ks.stat <- ks.res(x, y)$statistic
+    ks.stat <- ks.res(x, y)
     z <- max(obc.stat, ks.stat)
     return(z)
 }
@@ -329,8 +329,9 @@ test.ks.obc <- function(x, y) {
 new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = TRUE) {
   require(gtools)
   lenx <- length(x)
-    # Calculate TS for the ACTUAL data
-  ts.obs <- f(x, y,...)
+  # Calculate TS for the ACTUAL data
+  return(list(...))
+  ts.obs <- f(x, y, ...)
   ts.random <- vector(mode="numeric",length=num.perm)
   # Two sample
   if(is.numeric(y)){
@@ -364,13 +365,10 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   }  
   
   # One Sample
-  #if (is.character(y)){
-  #  y <- get(y, mode = "function", envir = parent.frame())
-  #}
-  #if (is.function(y)){
+  if (is.function(y)) y <- as.character(substitute(y))
   if(is.character(y)){
     ry <- dist.conv(funname=y, type="r")
-    y <- get(y, mode = "function", envir = parent.frame())
+    fy <- get(y, mode = "function", envir = parent.frame())
     for (i in 1:num.perm){
       z <- ry(lenx,...)
       ts.random[i] <- f(z,y,...)
@@ -378,6 +376,7 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
     c.val <- quantile(ts.random, probs = 0.95)
     if (diag == TRUE) {
+      # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test statistic
       return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random))
     } else {
       return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
@@ -386,5 +385,15 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   
 }
 # This code snippet allows us to take in a function argument such as qgamma
+power.res.onesamp <- function(x, y,..., f, g=new.perm.test){
+  dim.x <- dim(x)
+  fun <- f
+  if (is.function(y)) y <- as.character(substitute(y))
+  pv <- vector(mode="numeric",length=dim.x[1])
+  for (i in 1:dim.x[1]) {
+    a <- g(x[i, ], y, ..., f = fun)
+    pv[i] <- a[[1]]
+  }
+  return(pv)
+}
 
-# 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test statistic
