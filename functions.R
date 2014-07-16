@@ -330,8 +330,9 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   require(gtools)
   lenx <- length(x)
   # Calculate TS for the ACTUAL data
-  return(list(...))
-  ts.obs <- f(x, y, ...)
+  # return(list(...))
+  #ts.obs <- f(x, y, ...)
+  ts.obs <- do.call(f,c(list(x),list(y),list(...)[[1]]))
   ts.random <- vector(mode="numeric",length=num.perm)
   # Two sample
   if(is.numeric(y)){
@@ -370,8 +371,8 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
     ry <- dist.conv(funname=y, type="r")
     fy <- get(y, mode = "function", envir = parent.frame())
     for (i in 1:num.perm){
-      z <- ry(lenx,...)
-      ts.random[i] <- f(z,y,...)
+      z <- do.call(ry,c(list(lenx),list(...)[[1]])) #(lenx,...)
+      ts.random[i] <- do.call(f,c(list(z),list(y),list(...)[[1]]))
     }
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
     c.val <- quantile(ts.random, probs = 0.95)

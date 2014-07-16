@@ -15,7 +15,6 @@ z <- 10  #Number of samples
 lens <- c(4, 5, 6, 7, 8)  #Number of draws in each sample
 num.samps <- length(lens)  #How many different draws?
 
-
 # Distributions to test
 dist <- list("norm",
              "t",
@@ -26,9 +25,12 @@ param <- list(list(mean=0,sd=1),
 num.dist.test <- length(dist) #Number of different distributions to test
 
 #Methods to use
-liMethods <- list(myts, 
-                  ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
+liMethods <- list(myts=myts, 
+                  ks.res.simp=ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
 num.methods <- length(liMethods)
+
+# P-Value Cutoff to assess power 
+cutoff <- .05
 
 
 # 
@@ -78,17 +80,64 @@ for (i in 1:num.dist.test) {
   }
   liPVals[[i]] <- pval_samp
 }
+
+# Naming the PVals function
+for(i in 1:num.dist.test){
+  names(liPVals)[i] <-paste(dist[[i]], "(", paste(param[[i]], collapse=","), ")", sep="")
+    for (j in 1:num.samps) {
+      names(liPVals[[i]])[j] <- paste("Samp Size =", lens[j] ,  sep=" ")
+      for (k in 1:num.methods){
+        names(liPVals[[i]][[j]])[k] <- names(liMethods[k])
+      }
+    }
+}
+
 # Making table of results from the p-value Data
 
+liResults <- vector(mode="list", length=num.dist.test)
 
+# Number of distributions to test
 
+for (i in 1:num.dist.test) {
+  res_samp <- vector(mode="list",length=num.samps)
+  # Number of sample sizes (10, 20, 50, 100)
+  for (j in 1:num.samps) {
+    # Looking up Pvals to evaluate
+    x <- liPVals[[i]][[j]]   
+    res_methods <- vector(mode="list",length=num.methods)
+    
+    # Number of methods to test with
+    for (k in 1:num.methods){
+      # Evaluating using the correct method
+      pvals <- liPVals[[i]][[j]][[k]]
+      res_methods[[k]] <- sum(pvals>.05)/length(pvals)
+    }
+    res_samp[[j]] <- res_methods
+  }
+  liResults[[i]] <- res_samp
+}
 
-# results <- matrix(, nrow = num.dif.draws, ncol = num.test)  #Will record rejection rate later
+# Naming the results list
+for(i in 1:num.dist.test){
+  names(liResults)[i] <-paste(dist[[i]], "(", paste(param[[i]], collapse=","), ")", sep="")
+  for (j in 1:num.samps) {
+    names(liResults[[i]])[j] <- paste("Samp Size =", lens[j] ,  sep=" ")
+    for (k in 1:num.methods){
+      names(liResults[[i]][[j]])[k] <- names(liMethods[k])
+    }
+  }
+}
 
+# Making into a more human readable set of tables
+liTables <- vector(mode="list", length=num.dist.test)
 
-
-rownames(results) <- lens
-colnames(results) <- c("max_q", "perm_KS", "max_q_ks", "max_q_ks_adj", "q_out")
-liResults[[1]] <- results
-names(liResults)[1] <- c("N(0,3) vs t(3)")
-liData200[1] <- list(list(x, y))
+for (i in 1:num.dist.test) {
+  liTables[[i]] <- matrix(,ncol=num.methods,nrow=num.samps)
+  for (j in 1:num.samps){
+    liTables[[i]][j,] <- as.numeric(liResults[[i]][[j]])
+    
+  }
+  names(liTables)[i] <-paste(dist[[i]], "(", paste(param[[i]], collapse=","), ")", sep="")
+  rownames(liTables[[i]]) <- paste("Samp Size =", lens ,  sep=" ")
+  colnames(liTables[[i]]) <- paste(names(liMethods))
+}
