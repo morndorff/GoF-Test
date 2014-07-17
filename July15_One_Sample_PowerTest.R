@@ -41,6 +41,9 @@ liMethods <- list(#myts.out=myts.out)
                    ks.res.simp=ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
 num.methods <- length(liMethods)
 
+method_param <- list(NULL,
+                     NULL)
+
 # P-Value Cutoff to assess power 
 cutoff <- .05
 
@@ -83,7 +86,7 @@ for (i in 1:num.dist.test) {
 #       if(liMethods[[k]]=="myts.out"){
 #         pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=liMethods[[k]], g=new.perm.test.out)
 #       }
-      pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=names(liMethods[k]), g=new.perm.test)
+      pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), distops=null_param[[i]], f=names(liMethods[k]), fops=method_param[[k]], g=new.perm.test)
       pval_methods[[k]] <- pvals
       }
     pval_samp[[j]] <- pval_methods

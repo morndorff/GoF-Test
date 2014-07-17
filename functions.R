@@ -325,19 +325,20 @@ test.ks.obc <- function(x, y) {
     z <- list(KS = pv.ks, OBC = pv.obc, Comb = pv.com)
     return(z)
 }
-new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = TRUE) {
+new.perm.test <- function(x, y, distops=NULL, f, fops=NULL, num.perm = 2001, diag = FALSE, exact = TRUE) {
   require(gtools)
   lenx <- length(x)
   
   # Handling function inputs for y
   if (is.function(y)) y <- as.character(substitute(y))
   if (is.character(y)) y <- chartoli(y)
+  
+
   # Calculating observed test statistic
-  if(length(list(...))==0) {
-    ts.obs <- do.call(f,c(list(x),list(names(y))))
-  } else { 
-    ts.obs <- do.call(f,c(list(x),list(names(y)),list(...)[[1]]))
-  }
+  if (length(fops)==0) fops <- NULL
+  if (length(distops)==0) distops <- NULL
+    ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))
+  
   ts.random <- vector(mode="numeric",length=num.perm)
 
   # Two sample
@@ -376,8 +377,8 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
     ry <- dist.conv(funname=names(y), type="r")
     fy <- get(names(y), mode = "function", envir = parent.frame())
     for (i in 1:num.perm){
-      z <- do.call(ry,c(list(lenx),list(...)[[1]])) #(lenx,...)
-      ts.random[i] <- do.call(f,c(list(z),list(names(y)),list(...)[[1]]))
+      z <- do.call(ry,c(list(lenx),distops)) #(lenx,...)
+      ts.random[i] <- do.call(f,c(list(z),list(names(y)),distops,fops))
     }
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
     c.val <- quantile(ts.random, probs = 0.95)
@@ -390,7 +391,7 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   }
   
 }
-power.res.onesamp <- function(x, y, ..., f, g=new.perm.test){
+power.res.onesamp <- function(x, y, distops=NULL, f, fops=NULL, g=new.perm.test){
   # Args:
   # x: numeric matrix
   # y: either: function name, character naming a function, or
@@ -402,7 +403,7 @@ power.res.onesamp <- function(x, y, ..., f, g=new.perm.test){
   if (is.character(y)) y <- chartoli(y)
   pv <- vector(mode="numeric",length=dim.x[1])
   for (i in 1:dim.x[1]) {
-    a <- g(x[i, ], y, ..., f = fun)
+    a <- g(x[i, ], y, distops, f = fun, fops)
     pv[i] <- a[[1]]
   }
   return(pv)
