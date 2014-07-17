@@ -328,7 +328,7 @@ test.ks.obc <- function(x, y) {
 new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = TRUE) {
   require(gtools)
   lenx <- length(x)
-  if 
+  
   # Handling function inputs for y
   if (is.function(y)) y <- as.character(substitute(y))
   if (is.character(y)) y <- chartoli(y)
@@ -390,8 +390,6 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   }
   
 }
-# This code snippet allows us to take in a function argument such as qgamma
-
 power.res.onesamp <- function(x, y, ..., f, g=new.perm.test){
   # Args:
   # x: numeric matrix
@@ -409,4 +407,3 @@ power.res.onesamp <- function(x, y, ..., f, g=new.perm.test){
   }
   return(pv)
 }
-

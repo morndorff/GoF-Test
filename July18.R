@@ -76,3 +76,20 @@ funtoli <- function(fun){
   names(a) <- as.character(substitute(fun))
   return(a)
 }
+
+# Doing some experimentation with ellipsis 
+funex <- function(fun,...){
+  a <- list(...)
+  return(a)
+}
+d <- funex(qnorm,0,1)
+d
+
+funalt <- function(fun,funopts){
+  a <- funopts
+  return(a)
+}
+d <- funex(qnorm, min=0,max=1)
+d
+
+do.call(runif,c(list(n=100),d))
