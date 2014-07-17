@@ -1,6 +1,6 @@
 # Useful Functions
 source("functions_out.R")
-source("plot_functions.R")
+source("functions_plot.R")
 source("functions_power.R")
 source("functions_string.R")
 
@@ -58,10 +58,8 @@ myts <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     }
     
     # One Sample
-    if (is.function(y)) 
-        funname <- as.character(substitute(y))
-    if (is.character(y)) 
-        funname <- y
+    if (is.function(y)) funname <- as.character(substitute(y))
+    if (is.character(y))  funname <- y
     y <- get(funname, mode = "function", envir = parent.frame())
     if (!is.function(y)) 
         stop("'y' must be numeric or a function or a string naming a valid function")
@@ -330,9 +328,16 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   require(gtools)
   lenx <- length(x)
   # Calculate TS for the ACTUAL data
-  # return(list(...))
+   #return(list(...))
   #ts.obs <- f(x, y, ...)
-  ts.obs <- do.call(f,c(list(x),list(y),list(...)[[1]]))
+  if (is.function(y)) y <- funtochar(y)
+  
+  
+  if(length(list(...))==0) {
+    ts.obs <- do.call(f,c(list(x),list(y)))
+  } else { 
+    ts.obs <- do.call(f,c(list(x),list(y),list(...)[[1]]))
+  }
   ts.random <- vector(mode="numeric",length=num.perm)
   # Two sample
   if(is.numeric(y)){
@@ -366,7 +371,6 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   }  
   
   # One Sample
-  if (is.function(y)) y <- as.character(substitute(y))
   if(is.character(y)){
     ry <- dist.conv(funname=y, type="r")
     fy <- get(y, mode = "function", envir = parent.frame())
