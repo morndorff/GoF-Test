@@ -65,7 +65,7 @@ myts <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     y <- get(funname, mode = "function", envir = parent.frame())
     if (!is.function(y)) 
         stop("'y' must be numeric or a function or a string naming a valid function")
-    z <- max(x - y(seq(1/(lenx + 1), lenx/(lenx + 1), length.out = lenx), ...))  #Note: quantiles up for debate
+    z <- max(abs(x - y(seq(1/(lenx + 1), lenx/(lenx + 1), length.out = lenx), ...)))  #Note: quantiles up for debate
     if (do.plot == TRUE) {
         plot.ts.1sam(x, y, ..., funname = funname, lenx = lenx)
     }

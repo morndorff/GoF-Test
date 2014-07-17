@@ -15,23 +15,34 @@ z <- 10  #Number of samples
 lens <- c(4, 5, 6, 7, 8)  #Number of draws in each sample
 num.samps <- length(lens)  #How many different draws?
 
-# Distributions to test
+# Actual Distributions to test
 dist <- list("norm",
              "t",
              "unif")
-param <- list(list(mean=0,sd=1),
+param <- list(list(mean=0,sd=2),
               list(df=3),
               list(min=0,max=1))
+
 num.dist.test <- length(dist) #Number of different distributions to test
 
+# Null Distributions to test against:
+null_dist <- list("norm",
+             "t",
+             "unif")
+null_param <- list(list(mean=0,sd=1),
+              list(df=4),
+              list(min=0,max=2))
+
+
+
 #Methods to use
-liMethods <- list(myts=myts, 
-                  ks.res.simp=ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
+liMethods <- list(myts.out=myts.out)
+                  # myts=myts, 
+                  # ks.res.simp=ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
 num.methods <- length(liMethods)
 
 # P-Value Cutoff to assess power 
 cutoff <- .05
-
 
 # 
 # Generating Data
@@ -39,7 +50,6 @@ cutoff <- .05
 
 liData <- vector(mode="list", length=num.dist.test)
 # results <- matrix(, nrow = num.samps ncol = num.test)  #Will record rejection rate later
-
 for (i in 1:num.dist.test){
   samps <- vector(mode="list", length=num.samps)
   for (j in 1:num.samps) {
@@ -51,17 +61,14 @@ for (i in 1:num.dist.test){
   }
   liData[[i]] <- samps
 }
-
 # Naming
 for(i in 1:num.dist.test){
   names(liData)[i] <-paste(dist[[i]], "(", paste(param[[i]], collapse=","), ")", sep="")
 }
-# Doing the tests
 
 
+# Doing tests and generating P-Values
 liPVals <- vector(mode="list", length=num.dist.test)
-# Number of distributions to test
-
 for (i in 1:num.dist.test) {
   pval_samp <- vector(mode="list",length=num.samps)
     # Number of sample sizes (10, 20, 50, 100)
@@ -73,14 +80,16 @@ for (i in 1:num.dist.test) {
     # Number of methods to test with
     for (k in 1:num.methods){
       # Evaluating using the correct method
-      pvals <- power.res.onesamp(x, y=paste("q",dist[[i]],sep=""), param[[i]], f=liMethods[[k]], g=new.perm.test)
+      if(iMethods[[k]]=="myts.out"){
+        pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=liMethods[[k]], g=new.perm.test.out)
+      }
+      pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=liMethods[[k]], g=new.perm.test)
       pval_methods[[k]] <- pvals
       }
     pval_samp[[j]] <- pval_methods
   }
   liPVals[[i]] <- pval_samp
 }
-
 # Naming the PVals function
 for(i in 1:num.dist.test){
   names(liPVals)[i] <-paste(dist[[i]], "(", paste(param[[i]], collapse=","), ")", sep="")
@@ -92,12 +101,9 @@ for(i in 1:num.dist.test){
     }
 }
 
+
 # Making table of results from the p-value Data
-
 liResults <- vector(mode="list", length=num.dist.test)
-
-# Number of distributions to test
-
 for (i in 1:num.dist.test) {
   res_samp <- vector(mode="list",length=num.samps)
   # Number of sample sizes (10, 20, 50, 100)
@@ -110,13 +116,12 @@ for (i in 1:num.dist.test) {
     for (k in 1:num.methods){
       # Evaluating using the correct method
       pvals <- liPVals[[i]][[j]][[k]]
-      res_methods[[k]] <- sum(pvals>.05)/length(pvals)
+      res_methods[[k]] <- sum(pvals<.05)/length(pvals)
     }
     res_samp[[j]] <- res_methods
   }
   liResults[[i]] <- res_samp
 }
-
 # Naming the results list
 for(i in 1:num.dist.test){
   names(liResults)[i] <-paste(dist[[i]], "(", paste(param[[i]], collapse=","), ")", sep="")
@@ -128,9 +133,9 @@ for(i in 1:num.dist.test){
   }
 }
 
+
 # Making into a more human readable set of tables
 liTables <- vector(mode="list", length=num.dist.test)
-
 for (i in 1:num.dist.test) {
   liTables[[i]] <- matrix(,ncol=num.methods,nrow=num.samps)
   for (j in 1:num.samps){
