@@ -19,8 +19,8 @@ plot.ts.1sam <- function(x, y, ..., funname, lenx) {
 plot.ts.2sam <- function(x, y, x1, y1, lenx, leny) {
     if (lenx == leny) {
         par(mfrow = c(2, 1))
-        # Making Quantile Graph: Note: Because Lengths are the same, don't need iterpolation. (use type=1,for
-        # quantiles) For graphical purposes only
+        # Making Quantile Graph: Note: Because Lengths are the same, don't need
+        # iterpolation. (use type=1,for quantiles) For graphical purposes only
         q1 <- quantile(x, probs = x1, type = 1)
         q_inter <- approxfun(x1, q1, yleft = min(q1), yright = max(q1), method = "constant")
         plot(q_inter, ylim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 1), main = "Interpolated Quartile Function", 
@@ -29,7 +29,8 @@ plot.ts.2sam <- function(x, y, x1, y1, lenx, leny) {
         points(x1, q1)
         # Making ECDF Graph
         f1 <- ecdf(x)
-        plot(f1, xlim = c(min(x[1], y[1]), max(x[lenx], y[lenx])), ylab = "Probs", xlab = "Data", main = "ECDF and Points")  #plot 1st sample points
+        plot(f1, xlim = c(min(x[1], y[1]), max(x[lenx], y[lenx])), ylab = "Probs", xlab = "Data", 
+            main = "ECDF and Points")  #plot 1st sample points
         points(y, y1, col = "red")  #put 2nd sample on graph
     } else if (lenx > leny) {
         q1 <- quantile(x, probs = x1, type = 4)
@@ -40,8 +41,8 @@ plot.ts.2sam <- function(x, y, x1, y1, lenx, leny) {
         plot(q_inter, ylim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 1), main = "Interpolated Quartile Function", 
             xlab = "Probs", ylab = "Data")  #quartile plot for z2
         points(y1, y, col = "red")
-        plot(f, ylim = c(0, 1), xlim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 1), main = "Linearly Interpolated ECDF", 
-            xlab = "Data", ylab = "Probs")  #plot of ECDF 
+        plot(f, ylim = c(0, 1), xlim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 
+            1), main = "Linearly Interpolated ECDF", xlab = "Data", ylab = "Probs")  #plot of ECDF 
         # Want the limits to include the points, so above w/ maxes and mins is necessary
         lines(ecdf(x))  #draws in original ECDF
         points(y, y1, col = "red")
@@ -55,8 +56,8 @@ plot.ts.2sam <- function(x, y, x1, y1, lenx, leny) {
         plot(q_inter, ylim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 1), main = "Interpolated Quartile Function", 
             xlab = "Probs", ylab = "Data")  #quartile plot for z2
         points(x1, x, col = "red")
-        plot(f, ylim = c(0, 1), xlim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 1), main = "Linearly Interpolated ECDF", 
-            xlab = "Data", ylab = "Probs")  #plot of ECDF 
+        plot(f, ylim = c(0, 1), xlim = c(min(y[1], x[1]) - 1, max(x[lenx], y[leny]) + 
+            1), main = "Linearly Interpolated ECDF", xlab = "Data", ylab = "Probs")  #plot of ECDF 
         # Want the limits to include the points, so above w/ maxes and mins is necessary
         lines(ecdf(y))  #draws in original ECDF
         points(x, x1, col = "red")
@@ -84,8 +85,9 @@ myqq <- function(x, y) {
     # Rank Data
     sx <- sort(x)
     sy <- sort(y)
-    # Dealing with unequal sample sizes via linear interpolation May want to do something other than
-    # linear interpolation later might be useful to have seperate function
+    # Dealing with unequal sample sizes via linear interpolation May want to do
+    # something other than linear interpolation later might be useful to have seperate
+    # function
     lenx <- length(sx)
     leny <- length(sy)
     if (lenx > leny) 

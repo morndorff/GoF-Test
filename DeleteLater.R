@@ -1,5 +1,5 @@
-# May 19 Forging ahead with some power studies This uses some code from May18.R, in particular the
-# 'finished' Power Code Cleanup from Earlier
+# May 19 Forging ahead with some power studies This uses some code from May18.R, in
+# particular the 'finished' Power Code Cleanup from Earlier
 set.seed(5)
 source("functions.R")
 liResults <- list(NULL)
@@ -81,7 +81,8 @@ diag.plot(x[2, ], y[2, ])  #p-val .062
 diag.plot(x[3, ], y[3, ])  #p-val 1
 diag.plot(x[4, ], y[4, ])  #p-val .074
 
-############################################################ N(0,2) vs exp(1/2) Notes that these distributions have identical variances (different means)
+############################################################ N(0,2) vs exp(1/2) Notes that these distributions have identical variances
+############################################################ (different means)
 ptm <- proc.time()
 z <- 250  #Number of Samples
 lens <- c(10, 20, 50, 100, 200)  #Number of Draws in each sample

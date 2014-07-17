@@ -1,20 +1,18 @@
-# May 19 
-# This script and the associated R Environment 'max_prob' 
-# illustrate the problems of using the
-# maximum in several distributions The following objects are imporatnt 
-# x - A 80x200 samples from  N(0,3) 
-# y - A 80x200 samples from t(3) 
-# test3 -results of the max(quantile difs) perm test
+# May 19 This script and the associated R Environment 'max_prob' illustrate the
+# problems of using the maximum in several distributions The following objects are
+# imporatnt x - A 80x200 samples from N(0,3) y - A 80x200 samples from t(3) test3
+# -results of the max(quantile difs) perm test
 
 
-#Note: Problem with permutation. Look at the following:
+# Note: Problem with permutation. Look at the following:
 test3 <- perm.test(x[2, ], y[2, ], myts)  #This is from the 2nd sample, 200 draws from N(0,3), t(3)
-# Note that this returns a p-value of 1, despite the obvious differences in the distribution
+# Note that this returns a p-value of 1, despite the obvious differences in the
+# distribution
 myts(x[2, ], y[2, ], do.plot = TRUE)
-# Why is this happening?  For one thing, the biggest differences often occur at the min and the max of
-# the distribtion. If we mix using permutation, these maxes are likely to land in different samples,
-# so the result is exactly the same as before, and the observed TS is the same So we get a bunch of
-# ties
+# Why is this happening?  For one thing, the biggest differences often occur at the
+# min and the max of the distribtion. If we mix using permutation, these maxes are
+# likely to land in different samples, so the result is exactly the same as before,
+# and the observed TS is the same So we get a bunch of ties
 hist(test3[[4]])
 table(test3[[4]])
 ## More on the problem:
@@ -40,8 +38,9 @@ segments(sortx, x1, x1 = sorty, y1 = y1, col = "red")
 # want biggest in blue (This code snippet will be useful later)
 a <- which.max(abs(difxy))
 segments(sortx[a], x1[a], x1 = sorty[a], y1 = y1[a], col = "blue")
-# Two notes: (1)Divergence at tails! (2) Even if we do some permutation, we are still screwed, since
-# the max distance will be very similar Some graphs of t(3) and N(0,3) , overlayed
+# Two notes: (1)Divergence at tails! (2) Even if we do some permutation, we are
+# still screwed, since the max distance will be very similar Some graphs of t(3) and
+# N(0,3) , overlayed
 grapht.x <- seq(-15, 15, length = 300)
 grapht.y <- dt(grapht.x, 3)
 graphn.x <- seq(-15, 15, length = 300)
@@ -55,7 +54,8 @@ graphn.x <- seq(-15, -5, length = 300)
 graphn.y <- dnorm(graphn.x, 0, 3)
 plot(grapht.x, grapht.y, type = "l", lwd = 2)
 lines(graphn.x, graphn.y, col = "red", lwd = 2)
-############ To do tomorrow: permute things look at the differences, and see how its the same?  May 19
+############ To do tomorrow: permute things look at the differences, and see how its the same?
+############ May 19
 sm.x <- tail(sortx)
 sm.y <- tail(sorty)
 plot(ecdf(sm.x))
@@ -82,11 +82,12 @@ toy_test <- perm.test(toy.x, toy.y, myts)
 toy_test
 perm.test(toy.x, toy.y, ks.res.simp)
 ks.test(toy.x, toy.y)
-# To be fair, everything else fails in this particular example. But the problem is that our problem
-# persists even if other differences appear Max of the quantiles isn't a 'stable' enough statistic to
-# be approrpriate? This is shown in the power studies The p-value becomes '1', often when the largest
-# value is far away and the 2nd largest value resides in the other sample e.g. in proby, largest value
-# is 13.29, 2nd largest is 7.68 in prox, the largest value is 7.94, 2nd largest is 7.56 this becomes
-# all that matters, all other information is discarded However, for KS, that is not the case, even
-# though it takes a 'maximum' statistic as well The problem doesn't only happen for this kind of thing
-# though... 
+# To be fair, everything else fails in this particular example. But the problem is
+# that our problem persists even if other differences appear Max of the quantiles
+# isn't a 'stable' enough statistic to be approrpriate? This is shown in the power
+# studies The p-value becomes '1', often when the largest value is far away and the
+# 2nd largest value resides in the other sample e.g. in proby, largest value is
+# 13.29, 2nd largest is 7.68 in prox, the largest value is 7.94, 2nd largest is 7.56
+# this becomes all that matters, all other information is discarded However, for KS,
+# that is not the case, even though it takes a 'maximum' statistic as well The
+# problem doesn't only happen for this kind of thing though... 

@@ -18,7 +18,8 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
     ts.random <- c(NULL)
     ### 
     if (lenz < 11 & exact == TRUE) {
-        all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, set = FALSE)
+        all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
+            set = FALSE)
         all.permx <- all.perm[, 1:lenx]
         all.permy <- all.perm[, (lenx + 1):lenz]
         exact.perm <- dim(all.perm)[1]
@@ -76,7 +77,8 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
         
     }
     
-    # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test statistic
+    # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
+    # statistic
     if (diag == TRUE) {
         return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random))
     } else {
@@ -86,11 +88,11 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
 }
 
 myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
-    # Computes maximum difference of quantiles Args: x: A vector of observations for a R.V. (must be
-    # numeric) y: Either (1) Another vector of observations (two sample) (2) A quantile function such as
-    # qnorm (one sample) interp: method of interpolation used. For more details, see ?quantile do.plot:
-    # Creates a plot illustrating the statistic Returns: The value of the statistic AND associated index
-    # of the vector
+    # Computes maximum difference of quantiles Args: x: A vector of observations for a
+    # R.V. (must be numeric) y: Either (1) Another vector of observations (two sample)
+    # (2) A quantile function such as qnorm (one sample) interp: method of interpolation
+    # used. For more details, see ?quantile do.plot: Creates a plot illustrating the
+    # statistic Returns: The value of the statistic AND associated index of the vector
     
     x <- sort(x)
     # finding lengths
@@ -100,8 +102,8 @@ myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     ############ Two Sample
     if (is.numeric(y)) {
         y <- sort(y)
-        # finding range values Note: This is controversial. We should consider changing these range values in
-        # the future
+        # finding range values Note: This is controversial. We should consider changing
+        # these range values in the future
         x1 <- seq(1/lenx, 1, 1/lenx)
         y1 <- seq(1/leny, 1, 1/leny)
         if (lenx == leny) {
