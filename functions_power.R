@@ -42,7 +42,7 @@ ks.res <- function(x, y, ..., alternative = c("two.sided", "less", "greater"), e
     # if (exact && (alternative == 'two.sided') && !TIES) #NOTE: DID NOT CALL P-VALUE PVAL <- 1 -
     # .Call(C_pSmirnov2x, STATISTIC, n.x, n.y)
   } else {
-    
+    if (is.list(y)) y <- names(y)
     if (is.character(y)) 
       y <- get(y, mode = "function", envir = parent.frame())
     
@@ -108,6 +108,7 @@ ks.res.simp <- function (x, y, ...,
                              less = "the CDF of x lies below that of y", greater = "the CDF of x lies above that of y")
   }
   else {
+    if (is.list(y)) y <- names(y)
     if (is.character(y)) {
       y <- dist.conv.str(y,type="p")
       y <- get(y, mode = "function", envir = parent.frame())

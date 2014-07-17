@@ -27,9 +27,9 @@ myts <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     
     x <- sort(x)
     lenx <- length(x)
-    leny <- length(y)
     # Two Sample Test
     if (is.numeric(y)) {
+        leny <- length(y)
         y <- sort(y)
         # x1 and y1 are the quantile values
         x1 <- seq(1/lenx, 1, 1/lenx)
@@ -58,6 +58,7 @@ myts <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     }
     
     # One Sample
+    if (is.list(y)) y <- names(y)
     if (is.function(y)) funname <- as.character(substitute(y))
     if (is.character(y))  funname <- y
     y <- get(funname, mode = "function", envir = parent.frame())
@@ -327,18 +328,18 @@ test.ks.obc <- function(x, y) {
 new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = TRUE) {
   require(gtools)
   lenx <- length(x)
-  # Calculate TS for the ACTUAL data
-   #return(list(...))
-  #ts.obs <- f(x, y, ...)
-  if (is.function(y)) y <- funtochar(y)
-  
-  
+  if 
+  # Handling function inputs for y
+  if (is.function(y)) y <- as.character(substitute(y))
+  if (is.character(y)) y <- chartoli(y)
+  # Calculating observed test statistic
   if(length(list(...))==0) {
-    ts.obs <- do.call(f,c(list(x),list(y)))
+    ts.obs <- do.call(f,c(list(x),list(names(y))))
   } else { 
-    ts.obs <- do.call(f,c(list(x),list(y),list(...)[[1]]))
+    ts.obs <- do.call(f,c(list(x),list(names(y)),list(...)[[1]]))
   }
   ts.random <- vector(mode="numeric",length=num.perm)
+
   # Two sample
   if(is.numeric(y)){
     z <- c(x, y)
@@ -371,12 +372,12 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   }  
   
   # One Sample
-  if(is.character(y)){
-    ry <- dist.conv(funname=y, type="r")
-    fy <- get(y, mode = "function", envir = parent.frame())
+  if(is.list(y)){
+    ry <- dist.conv(funname=names(y), type="r")
+    fy <- get(names(y), mode = "function", envir = parent.frame())
     for (i in 1:num.perm){
       z <- do.call(ry,c(list(lenx),list(...)[[1]])) #(lenx,...)
-      ts.random[i] <- do.call(f,c(list(z),list(y),list(...)[[1]]))
+      ts.random[i] <- do.call(f,c(list(z),list(names(y)),list(...)[[1]]))
     }
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
     c.val <- quantile(ts.random, probs = 0.95)
@@ -390,10 +391,17 @@ new.perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = T
   
 }
 # This code snippet allows us to take in a function argument such as qgamma
-power.res.onesamp <- function(x, y,..., f, g=new.perm.test){
+
+power.res.onesamp <- function(x, y, ..., f, g=new.perm.test){
+  # Args:
+  # x: numeric matrix
+  # y: either: function name, character naming a function, or
+  # list with the format list(qnorm=qnorm)
   dim.x <- dim(x)
   fun <- f
+  if (is.character(f)) fun <- get(fun,mode="function", envir=parent.frame())
   if (is.function(y)) y <- as.character(substitute(y))
+  if (is.character(y)) y <- chartoli(y)
   pv <- vector(mode="numeric",length=dim.x[1])
   for (i in 1:dim.x[1]) {
     a <- g(x[i, ], y, ..., f = fun)

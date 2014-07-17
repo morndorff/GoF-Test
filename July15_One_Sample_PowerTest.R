@@ -36,9 +36,9 @@ null_param <- list(list(mean=0,sd=1),
 
 
 #Methods to use
-liMethods <- list(myts.out=myts.out)
-                  # myts=myts, 
-                  # ks.res.simp=ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
+liMethods <- list(#myts.out=myts.out)
+                   myts=myts, 
+                   ks.res.simp=ks.res.simp)#,myts.max.simp,myts.max.range.simp,myts.out,myts.par)
 num.methods <- length(liMethods)
 
 # P-Value Cutoff to assess power 
@@ -80,10 +80,10 @@ for (i in 1:num.dist.test) {
     # Number of methods to test with
     for (k in 1:num.methods){
       # Evaluating using the correct method
-      if(iMethods[[k]]=="myts.out"){
-        pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=liMethods[[k]], g=new.perm.test.out)
-      }
-      pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=liMethods[[k]], g=new.perm.test)
+#       if(liMethods[[k]]=="myts.out"){
+#         pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=liMethods[[k]], g=new.perm.test.out)
+#       }
+      pvals <- power.res.onesamp(x, y=paste("q",null_dist[[i]],sep=""), null_param[[i]], f=names(liMethods[k]), g=new.perm.test)
       pval_methods[[k]] <- pvals
       }
     pval_samp[[j]] <- pval_methods

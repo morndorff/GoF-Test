@@ -57,3 +57,16 @@ make_sample <- function(n, dist, params){
   sample <- do.call(rdist,c(list(n=n),params))
   return(sample)
 }
+
+funtoli <- function(fun){
+  a <- list(fun)
+  names(a) <- as.character(substitute(fun))
+  return(a)
+}
+
+chartoli <- function(char){
+  fun <- get(char, mode="function",envir=parent.frame())
+  a <- list(fun)
+  names(a) <- char
+  return(a)
+}
