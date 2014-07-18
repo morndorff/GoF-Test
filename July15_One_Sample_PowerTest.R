@@ -16,26 +16,41 @@ num.samps <- length(lens)  #How many different draws?
 
 # Actual Distributions to test
 dist <- list("norm", "norm", "norm", "norm", "norm", "unif", "unif", "unif")
-param <- list(list(mean = 0, sd = 3), list(mean = 0, sd = sqrt(3)), list(mean = 0, sd = 2), 
-    list(mean = 0, sd = 1), list(mean = 0, sd = sqrt(3)), list(min = 0.5, max = 1.5), 
-    list(min = 0, max = 1), list(min = 0, max = 1))
+param <- list(list(mean = 0, sd = 3), 
+              list(mean = 0, sd = sqrt(3)), 
+              list(mean = 0, sd = 2), 
+              list(mean = 0, sd = 1), 
+              list(mean = 0, sd = sqrt(3)), 
+              list(min = 0.5, max = 1.5), 
+              list(min = 0, max = 1), 
+              list(min = 0, max = 1))
 
 num.dist.test <- length(dist)  #Number of different distributions to test
 
 # Null Distributions to test against:
 null_dist <- list("t", "t", "exp", "norm", "gamma", "unif", "beta", "beta")
-null_param <- list(list(df = 3), list(df = 3), list(rate = 0.5), list(mean = 0, sd = 2), 
-    list(shape = 1, rate = 3), list(min = 0, max = 2), list(shape1 = 0.5, shape2 = 0.5), 
-    list(shape1 = 0.2, shape2 = 2))
+null_param <- list(list(df = 3), 
+                   list(df = 3), 
+                   list(rate = 0.5), 
+                   list(mean = 0, sd = 2), 
+                   list(shape = 1, rate = 3), 
+                   list(min = 0, max = 2), 
+                   list(shape1 = 0.5, shape2 = 0.5), 
+                   list(shape1 = 0.2, shape2 = 2))
 
 
 # Methods to use
-liMethods <- list(myts = myts, ks.res.simp = ks.res.simp)
-# myts.max.simp=myts.max.simp, myts.par=myts.par)
+liMethods <- list(myts = myts, 
+                  ks.res.simp = ks.res.simp,
+                  myts.max.simp=myts.max.simp, 
+                  myts.par=myts.par)
 
 num.methods <- length(liMethods)
 
-method_param <- list(NULL, NULL, NULL, NULL)
+method_param <- list(NULL, 
+                     NULL, 
+                     NULL, 
+                     NULL)
 
 # P-Value Cutoff to assess power
 cutoff <- 0.05
@@ -115,7 +130,7 @@ for (i in 1:num.dist.test) {
         for (k in 1:num.methods) {
             # Evaluating using the correct method
             pvals <- liPVals[[i]][[j]][[k]]
-            res_methods[[k]] <- sum(pvals < 0.05)/length(pvals)
+            res_methods[[k]] <- sum(pvals < cutoff)/length(pvals)
         }
         res_samp[[j]] <- res_methods
     }

@@ -4,19 +4,23 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
     # Takes as input f, a function that returns a statistic
     require(gtools)
     lenx <- length(x)
-    # This code snippet allows us to take in a function argument such as qgamma
-    if (is.character(y)) 
-        y <- get(y, mode = "function", envir = parent.frame())
+    
+    # Handling function inputs for y
     if (is.function(y)) 
-        y <- y(seq(1/(lenx + 1), lenx/(lenx + 1), length.out = lenx), ...)  #Note: quantiles up for debate
-    leny <- length(y)
-    # Combine both datasets into one
-    z <- c(x, y)
-    lenz <- length(z)
-    # Calculate TS for the ACTUAL data
-    ts.obs <- f(x, y)[[1]]
-    ts.random <- c(NULL)
-    ### 
+      y <- as.character(substitute(y))
+    if (is.character(y)) 
+      y <- chartoli(y)
+    
+    
+    # Calculating observed test statistic
+    if (length(fops) == 0) 
+      fops <- NULL
+    if (length(distops) == 0) 
+      distops <- NULL
+    ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))
+    
+    ts.random <- vector(mode = "numeric", length = num.perm)
+    
     if (lenz < 11 & exact == TRUE) {
         all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
             set = FALSE)
