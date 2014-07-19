@@ -311,7 +311,7 @@ test.ks.obc <- function(x, y) {
 }
 new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
     exact = TRUE, out=FALSE, ...) {
-    if (out=TRUE){
+    if (out==TRUE){
       res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact, ...)
       return(res_out)
     }
