@@ -310,8 +310,11 @@ test.ks.obc <- function(x, y) {
     return(z)
 }
 new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
-    exact = TRUE) {
-    require(gtools)
+    exact = TRUE, out=FALSE, ...) {
+    if (out=TRUE){
+      res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact, ...)
+      return(res_out)
+    }
     lenx <- length(x)
     
     # Handling function inputs for y
@@ -335,6 +338,8 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
         z <- c(x, y)
         lenz <- length(z)
         if (lenz < 11 & exact == TRUE) {
+          require(gtools)
+          
             all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
                 set = FALSE)
             all.permx <- all.perm[, 1:lenx]
@@ -384,7 +389,7 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
     }
     
 }
-power.res.onesamp <- function(x, y, distops = NULL, f, fops = NULL, g = new.perm.test) {
+power.res.onesamp <- function(x, y, distops = NULL, f, fops = NULL, g = new.perm.test, ...) {
     # Args: x: numeric matrix y: either: function name, character naming a function, or
     # list with the format list(qnorm=qnorm)
     dim.x <- dim(x)
