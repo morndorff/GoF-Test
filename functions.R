@@ -311,8 +311,24 @@ test.ks.obc <- function(x, y) {
 }
 new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
     exact = TRUE, out=FALSE, ...) {
-    if (out==TRUE){
-      res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact, ...)
+  #Args: 
+  # x: numeric vector
+  # y: numeric vector or quantile distribution (qgamma, qnorm)
+  # distops: list describing quantile parameters (e.g. for qunif, list(min=0,max=2)
+  # f: function outputting a test statistic
+  # fops: if the test statistic has options, put them here. (e.g. for myts.out, size=.2)
+  # num.perm: number of permutations to assess p-values
+  # 
+  # Output:
+  # list containing observed test statistic, 
+  if (is.null(distops)==FALSE){
+    if(is.list(distops)==FALSE) stop("distops must be a list")
+  }
+  if (is.null(fops)==FALSE){
+    if(is.list(fops)==FALSE) stop("distops must be a list")
+  }
+  if (out==TRUE){
+      res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact)
       return(res_out)
     }
     lenx <- length(x)
@@ -376,7 +392,7 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
             z <- do.call(ry, c(list(lenx), distops))  #(lenx,...)
             ts.random[i] <- do.call(f, c(list(z), list(names(y)), distops, fops))
         }
-        p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
+        p.val <- sum(abs(ts.random) >= abs(ts.obs)) / num.perm
         c.val <- quantile(ts.random, probs = 0.95)
         if (diag == TRUE) {
             # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
@@ -390,7 +406,9 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
     
 }
 power.res.onesamp <- function(x, y, distops = NULL, f, fops = NULL, g = new.perm.test, ...) {
-    # Args: x: numeric matrix y: either: function name, character naming a function, or
+    # Args: 
+    # x: numeric matrix 
+    # y: either: function name, character naming a function, or
     # list with the format list(qnorm=qnorm)
     dim.x <- dim(x)
     fun <- f
