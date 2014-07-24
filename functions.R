@@ -167,7 +167,7 @@ test.ks.obc <- function(x, y) {
     return(z)
 }
 new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
-    exact = TRUE, out=FALSE, ...) {
+    exact = TRUE, out=FALSE, do.plot=FALSE, ...) {
   #Args: 
   # x: numeric vector
   # y: numeric vector or quantile distribution (qgamma, qnorm)
@@ -233,6 +233,11 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
             p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
             c.val <- quantile(ts.random, probs = 0.95)
         }
+        if (do.plot == TRUE){
+          hplot <- hist(ts.random, prob=TRUE)
+          hplot
+          segments(ts.obs,0,x1=ts.obs,y1=max(hplot$density))
+        }
         if (diag == TRUE) {
             return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, 
                 ts.dist = ts.random))
@@ -240,7 +245,6 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
             return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
         }
     }
-    
     # One Sample
     if (is.list(y)) {
         ry <- dist.conv(funname = names(y), type = "r")
@@ -251,6 +255,11 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
         }
         p.val <- sum(abs(ts.random) >= abs(ts.obs)) / num.perm
         c.val <- quantile(ts.random, probs = 0.95)
+        if (do.plot == TRUE){
+          hplot <- hist(ts.random, prob=TRUE, main="Histogram of Permuted Test Statistic (line=Observed TS)")
+          hplot
+          segments(ts.obs,0,x1=ts.obs,y1=max(hplot$density))
+        }
         if (diag == TRUE) {
             # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
             # statistic
