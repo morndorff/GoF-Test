@@ -182,7 +182,7 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
     if(is.list(distops)==FALSE) stop("distops must be a list")
   }
   if (is.null(fops)==FALSE){
-    if(is.list(fops)==FALSE) stop("distops must be a list")
+    if(is.list(fops)==FALSE) stop("fops must be a list")
   }
   if (out==TRUE){
       res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact)
@@ -191,19 +191,21 @@ new.perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001,
     lenx <- length(x)
     
     # Handling function inputs for y
-    if (is.function(y)) 
-        y <- as.character(substitute(y))
-    if (is.character(y)) 
-        y <- chartoli(y)
-    
-    
+  if (is.function(y)) 
+    y <- as.character(substitute(y))
+  if (is.character(y)) {
+    y <- chartoli(y)
     # Calculating observed test statistic
     if (length(fops) == 0) 
-        fops <- NULL
+      fops <- NULL
     if (length(distops) == 0) 
-        distops <- NULL
+      distops <- NULL
     ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))
-    
+  }
+  if (is.numeric(y)){
+    # Calculating observed test statistic
+    ts.obs <- do.call(f, list(x,y, fops))
+  }
     ts.random <- vector(mode = "numeric", length = num.perm)
     
     # Two sample

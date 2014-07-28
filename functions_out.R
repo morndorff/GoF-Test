@@ -1,6 +1,6 @@
 # Outlier Functions
 
-perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = FALSE) {
+perm.test.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE) {
     # Takes as input f, a function that returns a statistic
     require(gtools)
     lenx <- length(x)
@@ -8,19 +8,25 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
     # Handling function inputs for y
     if (is.function(y)) 
       y <- as.character(substitute(y))
-    if (is.character(y)) 
+
+    if (is.character(y)) {
       y <- chartoli(y)
-    
-    
-    # Calculating observed test statistic
-    if (length(fops) == 0) 
-      fops <- NULL
-    if (length(distops) == 0) 
-      distops <- NULL
-    ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))
-    
+      # Calculating observed test statistic
+      if (length(fops) == 0) 
+        fops <- NULL
+      if (length(distops) == 0) 
+        distops <- NULL
+      ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))[[1]]
+    }
+    if (is.numeric(y)){
+      # Calculating observed test statistic
+      ts.obs <- do.call(f, list(x,y, fops))[[1]]
+    }
     ts.random <- vector(mode = "numeric", length = num.perm)
     
+    z <- c(x,y)
+    lenz <- length(z)
+
     if (lenz < 11 & exact == TRUE) {
         all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
             set = FALSE)
@@ -67,7 +73,7 @@ perm.test.out <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = F
                 stop("Tolerance Failure")
             }
             
-            res.rem <- perm.test(x, y, f = myts)
+            res.rem <- new.perm.test(x, y, f = myts)
             res.rem[4] <- perc.rep
             res.rem[5] <- c("Outlier Removed")
             res.rem[6] <- rem
@@ -131,7 +137,7 @@ myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
             if (do.plot == TRUE) 
                 plot.ts.2sam(x, y, x1, y1, lenx, leny)
         }
-        return(list(z, ind))
+        return(list("Test Statistic"=z, "Index of values used"=ind))
     }
     ############# One Sample
     if (is.function(y)) 
@@ -148,5 +154,5 @@ myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     if (do.plot == TRUE) {
         plot.ts.1sam(x, y, ..., funname = funname, lenx = lenx)
     }
-    return(list(z, ind))
+    return(list("Test Statistic"=z, "Index of Outlier Removed"=ind))
 } 
