@@ -4,6 +4,7 @@ source("functions_plot.R")
 source("functions_power.R")
 source("functions_string.R")
 source("functions_tstats.R")
+source("functions_new.R")
 
 power.res <- function(x, y, f, g = perm.test, boot = FALSE) {
     # A nice function for power calculations Takes as input a two matrices. Each row a
