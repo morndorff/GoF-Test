@@ -63,7 +63,7 @@ new.perm.test.out <- function(x,y, ..., f, fops=NULL,
     
     return(zout)
   }
-  num.loops <- num.loops +1
+  #num.loops <- num.loops +1
   # If there is a number of repeated values, call
   # this function again, but with a reduced x and y
   if (length(which(rep.val - 1e-08 < y & y < rep.val + 1e-08)) > 0) {
@@ -76,6 +76,6 @@ new.perm.test.out <- function(x,y, ..., f, fops=NULL,
   if (is.integer(rem) == FALSE) {
     stop("Tolerance Failure")
   } 
-  num.loops <- num.loops +1
+  #num.loops <- num.loops +1
   do.call(new.perm.test.out,c(list(x),list(y),list('f'=f),fops,distops))
 }
