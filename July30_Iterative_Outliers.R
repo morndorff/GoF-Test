@@ -122,9 +122,11 @@ which(x == max(tabsam))
 
 
 # New Testing
+set.seed(5)
 x <- runif(100,0,1)
 y <- runif(100,0,1)
 perm.test.match.out(x,y,f=myts.out)
+perm.test.out(x,y,f=myts.out)
 
 x <- rt(100,3)
 y <- rnorm(100,0,sqrt(3))

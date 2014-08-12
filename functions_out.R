@@ -362,7 +362,6 @@ perm.test.match.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm
       res.rem[5] <- c("Outlier Removed")
       res.rem[6] <- rep.val
       res.rem[7] <- z[rep.val]
-      #names(res.rem)[4:7] <- c("Percent Reps", "Out Check", "Index", "Repeated Value")
       names(res.rem)[4:7] <- c("Percent Reps", "Out Check", "Index", "Removed Value")
       
       return(res.rem)
@@ -376,9 +375,9 @@ perm.test.match.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm
   # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
   # statistic
   if (diag == TRUE) {
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random))
+    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random, `Value Matrix` = quan.mat))
   } else {
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, `Value Matrix` = quan.mat, 
+    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs,  
                 `Percent Repeat` = perc.rep, `Remove?` = c("No Outliers Removed")))
   }
 }
