@@ -99,6 +99,7 @@ perm.test.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 200
 perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE) {
   # Takes as input f, a function that returns a statistic
   require(gtools)
+
   lenx <- length(x)
   leny <- length(y) # FIX LATER
   # Handling function inputs for y
@@ -122,6 +123,7 @@ perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm 
   
   z <- c(x,y)
   lenz <- length(z)
+  z_seq <- seq_along(z)
   
   if (lenz < 11 & exact == TRUE) {
     all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
@@ -137,15 +139,19 @@ perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm 
   } else {
     quan.mat <- matrix(data = NA, nrow = num.perm, ncol = 2)
     for (i in 1:num.perm) {
-      z1 <- sample(z, size = lenz, replace = FALSE)
-      a <- z1[1:lenx]
-      b <- z1[(lenx + 1):lenz]
-      a <- sort(a)
-      b <- sort(b)
-      res <- f(a, b)
+      seq_sam <- sample(z_seq, size = lenz, replace= FALSE)
+      sam_x <- z[seq_sam[1:lenx]]
+      sam_y <- z[seq_sam[(lenx+1):lenz]]
+      sam_x <- sort(sam_x)
+      sam_y <- sort(sam_y)
+      res <- f(sam_x, sam_y)
       ts.random[i] <- res[[1]]
       ord <- res[[2]]
-      quan.mat[i, ] <- c(a[ord], b[ord])
+      x_out <- sam_x[ord]
+      y_out <- sam_y[ord]
+      x_out_ind <- match(x_out,z)
+      y_out_ind <- match(y_out,z)
+      quan.mat[i, ] <- c(x_out_ind,y_out_ind)
     }
     # Tabulating the values of quan.mat
     tab.quan.mat <- table(quan.mat)
@@ -157,29 +163,15 @@ perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm 
     # Finds the percent of the time the value repeats
     perc.rep <- numrept/num.perm
     while(perc.rep > .9) {
-      # value included most
-      if (length(which(rep.val - 1e-08 < y & y < rep.val + 1e-08)) > 0) {
-        rem <- which(rep.val - 1e-08 < y & y < rep.val + 1e-08)
-        y <- y[-rem]
-      } else {
-        rem <- which(rep.val - 1e-08 < x & x < rep.val + 1e-08)
-        x <- x[-rem]
+       if(rep.val>lenx){
+        y <- y[-(rep.val-lenx)]
+      } else{
+        x <- x[-rep.val]
       }
-      if (is.integer(rem) == FALSE) {
-        stop("Tolerance Failure")
-      }
-      
       res.rem <- perm.test.out.iter(x, y, f = myts.out)
       perc.rep <- res.rem[[4]]
-#       res.rem[4] <- perc.rep
-#       res.rem[5] <- c("Outlier Removed")
-#       res.rem[6] <- rem
-#       res.rem[7] <- rep.val
-#       names(res.rem)[4:7] <- c("Percent Reps", "Out Check", "Index", "Repeated Value")
-      lop.made <- lop.made +1
       lenx <- length(x)
       leny <- length(y)
-      #return(res.rem)
     }
     return(res.rem)
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm

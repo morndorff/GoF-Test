@@ -137,3 +137,33 @@ x <- c(1:20)
 y <- c(1:19,200)
 perm.test.match.out(x,y,f=myts.out)
 perm.test.out(x,y,f=myts.out)
+
+# Creating a toy function to do what we want
+
+iter.test <- function(x){
+  if(exists("i", where = -1, inherits=FALSE) == FALSE){
+    i <- 0
+  }
+    x <- x/2
+  while(x > 1 ){
+    x <- iter.test(x)
+  }
+  i <<- i+1
+  x
+  return(x)
+}
+
+
+# This works!
+iter.test2 <- function(x, count=0){
+  x <- x/2
+  count <- count+1
+  while(x > 1 ){
+    stor <- do.call(iter.test2,list(x=x, count=count))
+    x <- stor[[1]]
+    count <- stor[[2]]
+  }
+  return(list(x,count))
+}
+  
+    
