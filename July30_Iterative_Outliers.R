@@ -73,3 +73,65 @@ test
 str(test)
 samtest <- sample(test, size=15, replace=TRUE)
 table(samtest[][[]][1])
+
+
+######### Implementing new scheme based on matching:
+x <- 1:10
+y <- 1:10
+z <- c(x,y)
+z_seq <- seq_along(z)
+seq_sam <- sample(z_seq, size=20, replace=TRUE)
+tabsam <- table(seq_sam)
+maxtab <- which.max(seq_sam)
+pos <- as.numeric(names(seq_sam))
+z_sam <- z[seq_sam]
+
+
+from <- 
+
+
+str(maxtab)
+which(x == max(tabsam))
+
+
+# Figuring out why perm.test.match.out isn't working
+
+# x <- runif(100,0,1)
+# y <- runif(100,0,1)
+# lenx <- length(x)
+# leny <- length(y)
+# z <- c(x,y)
+# z_seq <- seq_along(z)
+# lenz <- length(z)
+# 
+# i <- 1
+# seq_sam <- sample(z_seq, size = lenz, replace= FALSE)
+# sam_x <- z[seq_sam[1:lenx]]
+# sam_y <- z[seq_sam[(lenx+1):lenz]]
+# sam_x <- sort(sam_x)
+# sam_y <- sort(sam_y)
+# res <- f(sam_x, sam_y)
+# ts.random[i] <- res[[1]]
+# ord <- res[[2]]
+# x_out <- sam_x[ord]
+# y_out <- sam_y[ord]
+# x_out_ind <- match(x_out,z)
+# y_out_ind <- match(y_out,z)
+# quan.mat[i, ] <- c(x_out_ind,y_out_ind)
+
+
+
+# New Testing
+x <- runif(100,0,1)
+y <- runif(100,0,1)
+perm.test.match.out(x,y,f=myts.out)
+
+x <- rt(100,3)
+y <- rnorm(100,0,sqrt(3))
+perm.test.match.out(x,y,f=myts.out)
+perm.test.out(x,y,f=myts.out)
+
+x <- c(1:20)
+y <- c(1:19,200)
+perm.test.match.out(x,y,f=myts.out)
+perm.test.out(x,y,f=myts.out)
