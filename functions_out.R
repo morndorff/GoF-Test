@@ -322,14 +322,6 @@ perm.test.match.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm
       x_out_ind <- match(x_out,z)
       y_out_ind <- match(y_out,z)
       quan.mat[i, ] <- c(x_out_ind,y_out_ind)
-      #a <- z1[1:lenx]
-      #b <- z1[(lenx + 1):lenz]
-      #a <- sort(a)
-      #b <- sort(b)
-      
-      #ts.random[i] <- res[[1]]
-      #ord <- res[[2]]
-      #quan.mat[i, ] <- c(a[ord], b[ord])
     }
     # Tabulating the values of quan.mat
     tab.quan.mat <- table(quan.mat)
