@@ -176,6 +176,12 @@ testy[59]
 testz <- c(testx,testy)
 mat_one <- perm.test.out.iter(testx,testy,f=myts.out)
 table(mat_one)
+# Fix?
+perm.test.match.out2.iter(testx,testy,f=myts.out)
+testx[61] <- 200
+perm.test.match.out2.iter(testx,testy,f=myts.out)
+
+
 
   
   

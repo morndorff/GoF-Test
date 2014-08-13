@@ -9,7 +9,6 @@ perm.test.match.out2 <- function(x, y, ..., f,
   require(gtools)
   lenx <- length(x)
   leny <- length(y)
-  count <- count +1 
   # Error handling and calculating test statistic -----------------------
   
   # Handling function inputs for y
@@ -77,6 +76,7 @@ perm.test.match.out2 <- function(x, y, ..., f,
       # Finds the percent of the time the value repeats
       perc.rep <- numrept/num.perm
       if (perc.rep > 0.9) {
+        count <- count +1 
         if(rep.val>lenx){
           y <- y[-(rep.val-lenx)]
         } else{
@@ -146,6 +146,7 @@ perm.test.match.out2 <- function(x, y, ..., f,
       # Finds the percent of the time the value repeats
       perc.rep <- numrept/num.perm
       if (perc.rep > 0.45) {
+        count <- count +1 
         if(rep.val>lenx){
           y <- y[-(rep.val-lenx)]
         } else{
@@ -180,7 +181,7 @@ perm.test.match.out2 <- function(x, y, ..., f,
                 `Out Check` = c("No Outliers Removed"),
                 `x`=x, 
                 `y`=y,  
-                `count`=count, 
+                `count`=count 
     ))
   } else {
     
@@ -197,7 +198,10 @@ perm.test.match.out2 <- function(x, y, ..., f,
   
 }
 
-perm.test.match.out2.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE, count=0) {
+perm.test.match.out2.iter <- function(x, y, ..., f, 
+                                      fops=NULL, distops= NULL, 
+                                      num.perm = 2001, diag = FALSE, 
+                                      exact = FALSE, count=0) {
   fcall <- match.call()
   #return(fcall)
   fcall[[1]] <- perm.test.match.out2
@@ -209,7 +213,9 @@ perm.test.match.out2.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, nu
     fcall$count <- test_results[["count"]]
     eval(fcall, parent.frame())
   } else{ 
-  return(test_results)
+    ind <- which(names(test_results)=="count")
+    names(test_results)[ind] <- "Outliers Removed"
+    return(test_results)
   } 
 }
 
