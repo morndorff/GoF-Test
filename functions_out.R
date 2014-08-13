@@ -1,200 +1,5 @@
 # Outlier Functions
 
-perm.test.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE) {
-    # Takes as input f, a function that returns a statistic
-    require(gtools)
-    lenx <- length(x)
-    
-    # Handling function inputs for y
-    if (is.function(y)) 
-      y <- as.character(substitute(y))
-
-    if (is.character(y)) {
-      y <- chartoli(y)
-      # Calculating observed test statistic
-      if (length(fops) == 0) 
-        fops <- NULL
-      if (length(distops) == 0) 
-        distops <- NULL
-      ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))[[1]]
-    }
-    if (is.numeric(y)){
-      # Calculating observed test statistic
-      ts.obs <- do.call(f, list(x,y, fops))[[1]]
-    }
-    ts.random <- vector(mode = "numeric", length = num.perm)
-    
-    z <- c(x,y)
-    lenz <- length(z)
-
-    if (lenz < 11 & exact == TRUE) {
-        all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
-            set = FALSE)
-        all.permx <- all.perm[, 1:lenx]
-        all.permy <- all.perm[, (lenx + 1):lenz]
-        exact.perm <- dim(all.perm)[1]
-        for (i in 1:exact.perm) {
-            ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
-        }
-        p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
-        c.val <- quantile(ts.random, probs = 0.95)
-    } else {
-        quan.mat <- matrix(data = NA, nrow = num.perm, ncol = 2)
-        for (i in 1:num.perm) {
-            z1 <- sample(z, size = lenz, replace = FALSE)
-            a <- z1[1:lenx]
-            b <- z1[(lenx + 1):lenz]
-            a <- sort(a)
-            b <- sort(b)
-            res <- f(a, b)
-            ts.random[i] <- res[[1]]
-            ord <- res[[2]]
-            quan.mat[i, ] <- c(a[ord], b[ord])
-        }
-        # Tabulating the values of quan.mat
-        tab.quan.mat <- table(quan.mat)
-        # Getting the number most repeated
-        rep.val <- as(names(which.max(tab.quan.mat)), mode(quan.mat))
-        # Getting the number of times it is repeated
-        temp <- which.max(tab.quan.mat)[[1]]
-        numrept <- tab.quan.mat[temp][[1]]
-        # Finds the percent of the time the value repeats
-        perc.rep <- numrept/num.perm
-        if (perc.rep > 0.9) {
-            # value included most
-            if (length(which(rep.val - 1e-08 < y & y < rep.val + 1e-08)) > 0) {
-                rem <- which(rep.val - 1e-08 < y & y < rep.val + 1e-08)
-                y <- y[-rem]
-            } else {
-                rem <- which(rep.val - 1e-08 < x & x < rep.val + 1e-08)
-                x <- x[-rem]
-            }
-            if (is.integer(rem) == FALSE) {
-                stop("Tolerance Failure")
-            }
-            
-            res.rem <- perm.test(x, y, f = myts)
-            res.rem[4] <- perc.rep
-            res.rem[5] <- c("Outlier Removed")
-            res.rem[6] <- rem
-            res.rem[7] <- rep.val
-            names(res.rem)[4:7] <- c("Percent Reps", "Out Check", "Index", "Repeated Value")
-            return(res.rem)
-        }
-        
-        p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
-        c.val <- quantile(ts.random, probs = 0.95)
-        
-    }
-    
-    # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
-    # statistic
-    if (diag == TRUE) {
-        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random))
-    } else {
-        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, `Value Matrix` = quan.mat, 
-            `Percent Repeat` = perc.rep, `Remove?` = c("No Outliers Removed")))
-    }
-}
-perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE, count=0) {
-  # Takes as input f, a function that returns a statistic
-  require(gtools)
-  ordvec <- vector(mode="numeric", length=num.perm)# Diagnostic, delete later
-  
-  lenx <- length(x)
-  leny <- length(y) # FIX LATER
-  count <- count +1
-  # Handling function inputs for y
-  if (is.function(y)) 
-    y <- as.character(substitute(y))
-  
-  if (is.character(y)) {
-    y <- chartoli(y)
-    # Calculating observed test statistic
-    if (length(fops) == 0) 
-      fops <- NULL
-    if (length(distops) == 0) 
-      distops <- NULL
-    ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))[[1]]
-  }
-  if (is.numeric(y)){
-    # Calculating observed test statistic
-    ts.obs <- do.call(f, list(x,y, fops))[[1]]
-  }
-  ts.random <- vector(mode = "numeric", length = num.perm)
-  
-  z <- c(x,y)
-  lenz <- length(z)
-  z_seq <- seq_along(z)
-  
-  if (lenz < 11 & exact == TRUE) {
-    all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
-                             set = FALSE)
-    all.permx <- all.perm[, 1:lenx]
-    all.permy <- all.perm[, (lenx + 1):lenz]
-    exact.perm <- dim(all.perm)[1]
-    for (i in 1:exact.perm) {
-      ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
-    }
-    p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
-    c.val <- quantile(ts.random, probs = 0.95)
-  } else {
-    quan.mat <- matrix(data = NA, nrow = num.perm, ncol = 2)
-    for (i in 1:num.perm) {
-      seq_sam <- sample(z_seq, size = lenz, replace= FALSE)
-      sam_x <- z[seq_sam[1:lenx]]
-      sam_y <- z[seq_sam[(lenx+1):lenz]]
-      sam_x <- sort(sam_x)
-      sam_y <- sort(sam_y)
-      res <- f(sam_x, sam_y)
-      ts.random[i] <- res[[1]]
-      ord <- res[[2]]
-      x_out <- sam_x[ord]
-      y_out <- sam_y[ord]
-      x_out_ind <- match(x_out,z)
-      y_out_ind <- match(y_out,z)
-      quan.mat[i, ] <- c(x_out_ind,y_out_ind)
-      #quan.mat[i, ] <- c(x_out,y_out)
-      #ordvec[i] <- ord
-      #return(list(sam_x,sam_y))
-    }
-    return(quan.mat)
-    # Tabulating the values of quan.mat
-    tab.quan.mat <- table(quan.mat)
-    # Getting the number most repeated
-    rep.val <- as(names(which.max(tab.quan.mat)), mode(quan.mat))
-    # Getting the number of times it is repeated
-    temp <- which.max(tab.quan.mat)[[1]]
-    numrept <- tab.quan.mat[temp][[1]]
-    # Finds the percent of the time the value repeats
-    perc.rep <- numrept/num.perm
-    while(perc.rep > .9) {
-       if(rep.val>lenx){
-        y <- y[-(rep.val-lenx)]
-      } else{
-        x <- x[-rep.val]
-      }
-      res.rem <- do.call(perm.test.out.iter,list(x=x, y=y, f = myts.out, count=count))
-      return(res.rem)
-
-    }
-    p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
-    c.val <- quantile(ts.random, probs = 0.95)
-    
-  }
-  
-  # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
-  # statistic
-  if (diag == TRUE) {
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random, `Value Matrix` = quan.mat,))
-  } else {
-    
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, 
-                `Percent Repeat` = perc.rep, `Remove?` = c("No Outliers Removed"), `xlen`=lenx, 
-                `ylen`=leny,  `Num Iter`=count ))
-  }
-}
-
 myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     # Computes maximum difference of quantiles 
    # Args: 
@@ -261,10 +66,17 @@ myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     return(list("Test Statistic"=z, "Index of Outlier Removed"=ind))
 } 
 
-perm.test.match.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE) {
-  # Takes as input f, a function that returns a statistic
+# Returning to the outlier functions
+# attempting to edit so that the behavior is sensical for
+# unequal sample sizes. It currently sucks.
+
+perm.test.out <- function(x, y, ..., f, 
+                                 fops=NULL, distops= NULL, 
+                                 num.perm = 2001, diag = FALSE, 
+                                 exact = FALSE, count=0) {
   require(gtools)
   lenx <- length(x)
+  leny <- length(y)
   # Error handling and calculating test statistic -----------------------
   
   # Handling function inputs for y
@@ -287,87 +99,190 @@ perm.test.match.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm
   ts.random <- vector(mode = "numeric", length = num.perm)
   
   # Begin controversial code here -----------------------
-  
-  z <- c(x,y)
-  z_seq <- seq_along(z)
-  lenz <- length(z)
-  
-  if (lenz < 11 & exact == TRUE) {
-    all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
-                             set = FALSE)
-    all.permx <- all.perm[, 1:lenx]
-    all.permy <- all.perm[, (lenx + 1):lenz]
-    exact.perm <- dim(all.perm)[1]
-    for (i in 1:exact.perm) {
-      ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
-    }
-    p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
-    c.val <- quantile(ts.random, probs = 0.95)
-  } else {
-    quan.mat <- matrix(data = NA, nrow = num.perm, ncol = 2)
-    for (i in 1:num.perm) {
-      #z1 <- sample(z, size = lenz, replace = FALSE)
-      seq_sam <- sample(z_seq, size = lenz, replace= FALSE)
-      sam_x <- z[seq_sam[1:lenx]]
-      sam_y <- z[seq_sam[(lenx+1):lenz]]
-      sam_x <- sort(sam_x)
-      sam_y <- sort(sam_y)
-      res <- f(sam_x, sam_y)
-      ts.random[i] <- res[[1]]
-      ord <- res[[2]]
-      x_out <- sam_x[ord]
-      y_out <- sam_y[ord]
-      x_out_ind <- match(x_out,z)
-      y_out_ind <- match(y_out,z)
-      quan.mat[i, ] <- c(x_out_ind,y_out_ind)
-    }
-    # Tabulating the values of quan.mat
-    tab.quan.mat <- table(quan.mat)
-    # Getting the number most repeated
-    rep.val <- as(names(which.max(tab.quan.mat)), mode(quan.mat))
-    # Getting the number of times it is repeated
-    temp <- which.max(tab.quan.mat)[[1]]
-    numrept <- tab.quan.mat[temp][[1]]
-    # Finds the percent of the time the value repeats
-    perc.rep <- numrept/num.perm
-    if (perc.rep > 0.9) {
-      #       # value included most
-      #       if (length(which(rep.val - 1e-08 < y & y < rep.val + 1e-08)) > 0) {
-      #         rem <- which(rep.val - 1e-08 < y & y < rep.val + 1e-08)
-      #         y <- y[-rem]
-      #       } else {
-      #         rem <- which(rep.val - 1e-08 < x & x < rep.val + 1e-08)
-      #         x <- x[-rem]
-      #       }
-      #       if (is.integer(rem) == FALSE) {
-      #         stop("Tolerance Failure")
-      #       }
-      if(rep.val>lenx){
-        y <- y[-(rep.val-lenx)]
-      } else{
-        x <- x[-rep.val]
+  # Equal Sample Sizes
+  if(lenx==leny){
+    z <- c(x,y)
+    z_seq <- seq_along(z)
+    lenz <- length(z)
+    
+    if (lenz < 11 & exact == TRUE) {
+      all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
+                               set = FALSE)
+      all.permx <- all.perm[, 1:lenx]
+      all.permy <- all.perm[, (lenx + 1):lenz]
+      exact.perm <- dim(all.perm)[1]
+      for (i in 1:exact.perm) {
+        ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
       }
-      res.rem <- perm.test(x, y, f = myts)
-      res.rem[4] <- perc.rep
-      res.rem[5] <- c("Outlier Removed")
-      res.rem[6] <- rep.val
-      res.rem[7] <- z[rep.val]
-      names(res.rem)[4:7] <- c("Percent Reps", "Out Check", "Index", "Removed Value")
-      
-      return(res.rem)
+      p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
+      c.val <- quantile(ts.random, probs = 0.95)
+    } else {
+      quan.mat <- matrix(data = NA, nrow = num.perm, ncol = 2)
+      for (i in 1:num.perm) {
+        #z1 <- sample(z, size = lenz, replace = FALSE)
+        seq_sam <- sample(z_seq, size = lenz, replace= FALSE)
+        sam_x <- z[seq_sam[1:lenx]]
+        sam_y <- z[seq_sam[(lenx+1):lenz]]
+        sam_x <- sort(sam_x)
+        sam_y <- sort(sam_y)
+        res <- f(sam_x, sam_y)
+        ts.random[i] <- res[[1]]
+        ord <- res[[2]]
+        x_out <- sam_x[ord]
+        y_out <- sam_y[ord]
+        x_out_ind <- match(x_out,z)
+        y_out_ind <- match(y_out,z)
+        quan.mat[i, ] <- c(x_out_ind,y_out_ind)
+      }
+      # Tabulating the values of quan.mat
+      tab.quan.mat <- table(quan.mat)
+      # Getting the number most repeated
+      rep.val <- as(names(which.max(tab.quan.mat)), mode(quan.mat))
+      # Getting the number of times it is repeated
+      temp <- which.max(tab.quan.mat)[[1]]
+      numrept <- tab.quan.mat[temp][[1]]
+      # Finds the percent of the time the value repeats
+      perc.rep <- numrept/num.perm
+      if (perc.rep > 0.9) {
+        count <- count +1 
+        if(rep.val>lenx){
+          y <- y[-(rep.val-lenx)]
+        } else{
+          x <- x[-rep.val]
+        }
+        res.rem <- perm.test(x, y, f = myts)
+        res.rem[4] <- perc.rep
+        res.rem[5] <- c("Outlier Removed")
+        res.rem[6] <- rep.val
+        res.rem[7] <- z[rep.val]
+        res.rem[[8]] <- x
+        res.rem[[9]] <- y
+        res.rem[10] <- count
+        names(res.rem)[4:10] <- c("Percent Reps", "Out Check", "Index", 
+                                  "Removed Value", "x", "y", "count")
+        
+        return(res.rem)
+      }
     }
+  }
+  # Unequal sample Sizes
+  if(lenx!=leny){
+    z <- c(x,y)
+    z_seq <- seq_along(z)
+    lenz <- length(z)
     
-    p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
-    c.val <- quantile(ts.random, probs = 0.95)
-    
+    if (lenz < 11 & exact == TRUE) {
+      all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
+                               set = FALSE)
+      all.permx <- all.perm[, 1:lenx]
+      all.permy <- all.perm[, (lenx + 1):lenz]
+      exact.perm <- dim(all.perm)[1]
+      for (i in 1:exact.perm) {
+        ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
+      }
+      p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
+      c.val <- quantile(ts.random, probs = 0.95)
+    } else {
+      quan.mat <- vector(mode="numeric", length=num.perm)
+      for (i in 1:num.perm) {
+        #z1 <- sample(z, size = lenz, replace = FALSE)
+        seq_sam <- sample(z_seq, size = lenz, replace= FALSE)
+        sam_x <- z[seq_sam[1:lenx]]
+        sam_y <- z[seq_sam[(lenx+1):lenz]]
+        sam_x <- sort(sam_x)
+        sam_y <- sort(sam_y)
+        res <- f(sam_x, sam_y)
+        ts.random[i] <- res[[1]]
+        ord <- res[[2]]
+        if(lenx > leny){
+          y_out <- sam_y[ord]
+          y_out_ind <- match(y_out,z)
+          quan.mat[i] <- c(y_out_ind)
+        } else {
+          x_out <- sam_x[ord]
+          x_out_ind <- match(x_out,z)
+          quan.mat[i] <- c(x_out_ind)
+        }
+      }
+      # Tabulating the values of quan.mat
+      tab.quan.mat <- table(quan.mat)
+      # Getting the number most repeated
+      rep.val <- as(names(which.max(tab.quan.mat)), mode(quan.mat))
+      # Getting the number of times it is repeated
+      temp <- which.max(tab.quan.mat)[[1]]
+      numrept <- tab.quan.mat[temp][[1]]
+      # Finds the percent of the time the value repeats
+      perc.rep <- numrept/num.perm
+      if (perc.rep > 0.45) {
+        count <- count +1 
+        if(rep.val>lenx){
+          y <- y[-(rep.val-lenx)]
+        } else{
+          x <- x[-rep.val]
+        }
+        res.rem <- perm.test(x, y, f = myts)
+        res.rem[4] <- perc.rep
+        res.rem[5] <- c("Outlier Removed")
+        res.rem[6] <- rep.val
+        res.rem[7] <- z[rep.val]
+        res.rem[[8]] <- x
+        res.rem[[9]] <- y
+        res.rem[10] <- count
+        names(res.rem)[4:10] <- c("Percent Reps", "Out Check", "Index", 
+                                  "Removed Value", "x", "y", "count")        
+        return(res.rem)
+      }
+    }
   }
   
-  # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
-  # statistic
+  # If we get here, we haven't returned yet, and we just need
+  # to analyze our p-values and output our answers (easy?)
+  p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
+  c.val <- quantile(ts.random, probs = 0.95)
+  
   if (diag == TRUE) {
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random, `Value Matrix` = quan.mat))
+    return(list(`p-value` = p.val, 
+                `95% crit val` = c.val, 
+                `Obs. TS` = ts.obs, 
+                `ts.dist` = ts.random, 
+                `Value Matrix` = quan.mat,
+                `Out Check` = c("No Outliers Removed"),
+                `x`=x, 
+                `y`=y,  
+                `count`=count 
+    ))
   } else {
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs,  
-                `Percent Repeat` = perc.rep, `Remove?` = c("No Outliers Removed")))
+    
+    return(list(`p-value` = p.val, 
+                `95% crit val` = c.val, 
+                `Obs. TS` = ts.obs, 
+                `Percent Repeat` = perc.rep, 
+                `Out Check` = c("No Outliers Removed"), 
+                `x`=x, 
+                `y`=y,  
+                `count`=count ))
   }
+  
+  
+}
+
+perm.test.out.iter <- function(x, y, ..., f, 
+                                      fops=NULL, distops= NULL, 
+                                      num.perm = 2001, diag = FALSE, 
+                                      exact = FALSE, count=0) {
+  fcall <- match.call()
+  #return(fcall)
+  fcall[[1]] <- perm.test.out
+  test_results <- eval(fcall, parent.frame())
+  if(test_results["Out Check"]=="Outlier Removed"){
+    fcall[[1]] <- perm.test.out.iter
+    fcall$x <- test_results[["x"]]
+    fcall$y <- test_results[["y"]]
+    fcall$count <- test_results[["count"]]
+    eval(fcall, parent.frame())
+  } else{ 
+    ind <- which(names(test_results)=="count")
+    names(test_results)[ind] <- "Outliers Removed"
+    return(test_results)
+  } 
 }
