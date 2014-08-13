@@ -167,3 +167,19 @@ iter.test2 <- function(x, count=0){
 }
   
     
+# Quick problem dsecriptions----------
+testx <- c(1:59,100)
+testy <- 1:59
+myts.out(testx,testy)
+testx[59]
+testy[59]
+testz <- c(testx,testy)
+mat_one <- perm.test.out.iter(testx,testy,f=myts.out)
+table(mat_one)
+
+  
+  
+# Learning about match.call
+funex <- function(a,b,c,...){
+  return(match.call())
+}

@@ -96,12 +96,14 @@ perm.test.out <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 200
             `Percent Repeat` = perc.rep, `Remove?` = c("No Outliers Removed")))
     }
 }
-perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE) {
+perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm = 2001, diag = FALSE, exact = FALSE, count=0) {
   # Takes as input f, a function that returns a statistic
   require(gtools)
-
+  ordvec <- vector(mode="numeric", length=num.perm)# Diagnostic, delete later
+  
   lenx <- length(x)
   leny <- length(y) # FIX LATER
+  count <- count +1
   # Handling function inputs for y
   if (is.function(y)) 
     y <- as.character(substitute(y))
@@ -152,7 +154,11 @@ perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm 
       x_out_ind <- match(x_out,z)
       y_out_ind <- match(y_out,z)
       quan.mat[i, ] <- c(x_out_ind,y_out_ind)
+      #quan.mat[i, ] <- c(x_out,y_out)
+      #ordvec[i] <- ord
+      #return(list(sam_x,sam_y))
     }
+    return(quan.mat)
     # Tabulating the values of quan.mat
     tab.quan.mat <- table(quan.mat)
     # Getting the number most repeated
@@ -168,12 +174,10 @@ perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm 
       } else{
         x <- x[-rep.val]
       }
-      res.rem <- perm.test.out.iter(x, y, f = myts.out)
-      perc.rep <- res.rem[[4]]
-      lenx <- length(x)
-      leny <- length(y)
+      res.rem <- do.call(perm.test.out.iter,list(x=x, y=y, f = myts.out, count=count))
+      return(res.rem)
+
     }
-    return(res.rem)
     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
     c.val <- quantile(ts.random, probs = 0.95)
     
@@ -182,12 +186,12 @@ perm.test.out.iter <- function(x, y, ..., f, fops=NULL, distops= NULL, num.perm 
   # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
   # statistic
   if (diag == TRUE) {
-    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random))
+    return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random, `Value Matrix` = quan.mat,))
   } else {
     
     return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, 
                 `Percent Repeat` = perc.rep, `Remove?` = c("No Outliers Removed"), `xlen`=lenx, 
-                `ylen`=leny, `Value Matrix` = quan.mat ))
+                `ylen`=leny,  `Num Iter`=count ))
   }
 }
 
@@ -199,8 +203,10 @@ myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     # y: Either (1) Another vector of observations (two sample)
     # (2) A quantile function such as qnorm (one sample) 
     # interp: method of interpolation
-    # used. For more details, see ?quantile do.plot: Creates a plot illustrating the
-    # statistic Returns: The value of the statistic AND associated index of the vector
+    # used. For more details, see ?quantile 
+    # do.plot: Creates a plot illustrating the
+    # statistic 
+    # Returns: The value of the statistic AND associated index of the vector
     
     x <- sort(x)
     # finding lengths
