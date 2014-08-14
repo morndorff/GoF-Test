@@ -235,3 +235,20 @@ power.res.onesamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.tes
     }
     return(pv)
 } 
+power.res.twosamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.test, ...) {
+  # Args: 
+  # x: numeric matrix 
+  # y: either: function name, character naming a function, or
+  # list with the format list(qnorm=qnorm)
+  dim.x <- dim(x)
+  fun <- f
+  if (is.character(f)) 
+    fun <- get(fun, mode = "function", envir = parent.frame())
+
+  pv <- vector(mode = "numeric", length = dim.x[1])
+  for (i in 1:dim.x[1]) {
+    a <- g(x[i, ], y[i,], distops, f = fun, fops)
+    pv[i] <- a[[1]]
+  }
+  return(pv)
+} 
