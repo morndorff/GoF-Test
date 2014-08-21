@@ -99,17 +99,8 @@ boot.test <- function(x, y, f, num.perm = 1000, diag = FALSE, exact = TRUE) {
         return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
     }
 }
-test.ks.obc <- function(x, y) {
-    # Right Now, this function returns the values of KS and OBC and a combined value,
-    # which is just the addition of the two numbers
-    pv.ks <- perm.test(x, y, ks.res.simp)[[1]]  #Based on Distribution
-    pv.obc <- perm.test(x, y, myts)[[1]]
-    pv.com <- pv.ks + pv.obc
-    z <- list(KS = pv.ks, OBC = pv.obc, Comb = pv.com)
-    return(z)
-}
 perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
-    exact = TRUE, out=FALSE, do.plot=FALSE, ...) {
+    exact = FALSE, out=FALSE, do.plot=FALSE, ...) {
   #Args: 
   # x: numeric vector
   # y: numeric vector or quantile distribution (qgamma, qnorm)
@@ -247,8 +238,40 @@ power.res.twosamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.tes
 
   pv <- vector(mode = "numeric", length = dim.x[1])
   for (i in 1:dim.x[1]) {
-    a <- g(x[i, ], y[i,], distops, f = fun, fops)
+    a <- g(x[i, ], y[i, ], distops, f = fun, fops)
     pv[i] <- a[[1]]
   }
   return(pv)
 } 
+Make_Inter_CDF <- function(x,y,interp=4){
+  z <-c(x,y)
+  z <- sort(z)
+  lenz <- length(z)
+  z1 <- seq(1/(lenz+1),lenz/(lenz+1), length.out=lenz)
+  #q1 <- quantile(z, probs = z1, type = interp)
+  #q_inter <- approxfun(z1, q1, yleft = min(q1), yright = max(q1))
+  cdf_inter <- approxfun(z,z1, yleft=0, yright=1)
+  return(cdf_inter)
+}
+Bi_Var_PIT <- function(x,y){
+  #com_QFun <- Make_Inter_QFun(x,y)
+  inter_CDF <- Make_Inter_CDF(x,y)
+  U_x <- inter_CDF(x)
+  U_y <- inter_CDF(y)
+  return(list(U_x,U_y))
+}
+Bi_Var_PIT_ks <- function(x,y, alpha=.05){
+  # Calculates Bivariate PIT using KS
+  a <- Bi_Var_PIT(x,y)
+  pval_x <- ks.test(a[[1]],punif,0,1)$p.value
+  pval_y <- ks.test(a[[2]],punif,0,1)$p.value
+  FWER <- alpha/2
+  pvals <- c(pval_x,pval_y)
+  if(pval_x < FWER & pval_y < FWER){
+    reject <- TRUE
+  }else{
+    reject <- FALSE
+  } 
+  names(reject) <- "REJECT NULL?"
+  return(list("Reject Null?"=reject, "Pvals"=c(pval_x,pval_y)))
+}

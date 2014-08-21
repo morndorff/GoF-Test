@@ -1,5 +1,5 @@
 # Test statistic functions
-myts <- function(x, y, ..., interp = 4, do.plot = FALSE) {
+Max_Quan_TS <- function(x, y, ..., interp = 4, do.plot = FALSE) {
   # Computes maximum difference of quantiles Comments: OBC Using Linear Interpolation
   # of the ECDF Recall: ECDF range is [1/n,1]. This is probably not realistic Args: x:
   # A vector of observations for a R.V. (must be numeric) y: Either (1) Another vector
@@ -60,7 +60,7 @@ myts <- function(x, y, ..., interp = 4, do.plot = FALSE) {
   return(z)
 }
 
-myts.par <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.25) {
+Trap_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.25) {
   # Computes area based on trapezoid areas Args: x: A vector of observations for a
   # R.V. (must be numeric) y: Either (1) Another vector of observations (two sample)
   # (2) A quantile function such as qnorm (one sample) size: controls height of
@@ -99,8 +99,8 @@ myts.par <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.25) {
   }
   return(z)
 }
-myts.max <- function(x, y, ...) {
-  obc.stat <- myts(x, y)
+Com_KS_Max_Quan_TS <- function(x, y, ...) {
+  obc.stat <- Max_Quan_TS(x, y)
   ks.stat <- ks.res.simp(x, y)
   if (obc.stat > ks.stat) {
     z <- list(obc.stat, c("OBC"))
@@ -110,7 +110,7 @@ myts.max <- function(x, y, ...) {
   
   return(z)
 }
-myts.max.simp <- function(x, y, ...) {
+Com_KS_Max_Quan_TS_Simp <- function(x, y, ...) {
   obc.stat <- myts(x, y, ...)
   ks.stat <- ks.res.simp(x, y, ...)
   if (obc.stat > ks.stat) {
@@ -121,11 +121,11 @@ myts.max.simp <- function(x, y, ...) {
   
   return(z)
 }
-myts.max.range <- function(x, y) {
+Com_KS_Max_Quan_Range_TS <- function(x, y) {
   # Returns value of the statistic and whether or not it from OBC
   com <- c(x, y)
   range <- max(com) - min(com)
-  obc.stat <- myts(x, y)/range
+  obc.stat <- Max_Quan_TS(x, y)/range
   ks.stat <- ks.res(x, y)
   if (obc.stat > ks.stat) {
     z <- list(obc.stat, c("OBC"))
@@ -135,11 +135,11 @@ myts.max.range <- function(x, y) {
   
   return(z)
 }
-myts.max.range.simp <- function(x, y) {
+Com_KS_Max_Quan_Range_TS_Simp <- function(x, y) {
   # Returns value of the statistic and whether or not it from OBC
   com <- c(x, y)
   range <- max(com) - min(com)
-  obc.stat <- myts(x, y)/range
+  obc.stat <- Max_Quan_TS(x, y)/range
   ks.stat <- ks.res.simp(x, y)
   z <- max(obc.stat, ks.stat)
   return(z)

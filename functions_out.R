@@ -1,6 +1,6 @@
 # Outlier Functions
 
-myts.out <- function(x, y, ..., interp = 4, do.plot = FALSE) {
+Max_Quan_Out_TS <- function(x, y, ..., interp = 4, do.plot = FALSE) {
     # Computes maximum difference of quantiles 
    # Args: 
     # x: A vector of observations for a
@@ -150,7 +150,7 @@ perm.test.out <- function(x, y, ..., f,
         } else{
           x <- x[-rep.val]
         }
-        res.rem <- perm.test(x, y, f = myts)
+        res.rem <- perm.test(x, y, f = Max_Quan_TS)
         res.rem[4] <- perc.rep
         res.rem[5] <- c("Outlier Removed")
         res.rem[6] <- rep.val
@@ -220,7 +220,7 @@ perm.test.out <- function(x, y, ..., f,
         } else{
           x <- x[-rep.val]
         }
-        res.rem <- perm.test(x, y, f = myts)
+        res.rem <- perm.test(x, y, f = Max_Quan_TS)
         res.rem[4] <- perc.rep
         res.rem[5] <- c("Outlier Removed")
         res.rem[6] <- rep.val
