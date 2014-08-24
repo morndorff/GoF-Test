@@ -6,7 +6,7 @@
 # Also taking the opportunity to generate data better than before 
 # Generate all the  data first, store it in a list, 
 # then apply the methods to the stored data 
-#Avoids messes when I want to add a method later and use the same data
+# Avoids messes when I want to add a method later and use the same data
 
 # rm(list=ls())
 
@@ -14,7 +14,7 @@ set.seed(5)
 source("functions.R")
 
 # Initializing Power Simulation Parameters
-z <- 14  #Number of samples
+z <- 5  #Number of samples
 lens <- c(4, 5, 6, 7, 8)  #Number of draws in each sample
 num.samps <- length(lens)  #How many different draws?
 
@@ -44,18 +44,19 @@ param_two <- list(list(df = 3),
 
 dist <-list(dist_one, dist_two)
 param <- list(param_one, param_two)
+
 # Methods to use
-liMethods <- list(myts = myts, 
-                  ks.res.simp = ks.res.simp,
-                  myts.max.simp=myts.max.simp, 
-                  myts.par=myts.par)
+liMethods <- list(myts = myts)#, 
+                  #ks.res.simp = ks.res.simp,
+                  #myts.max.simp=myts.max.simp, 
+                  #myts.par=myts.par)
 
 num.methods <- length(liMethods)
 
-method_param <- list(NULL, 
-                     NULL, 
-                     NULL, 
-                     NULL)
+method_param <- list(NULL)#, 
+                     #NULL, 
+                     #NULL, 
+                     #NULL)
 
 # P-Value Cutoff to assess power
 cutoff <- 0.05
@@ -92,7 +93,7 @@ for (i in 1:num.dist.test) {
 liPVals <- vector(mode = "list", length = num.dist.test)
 for (i in 1:num.dist.test) {
   pval_samp <- vector(mode = "list", length = num.samps)
-  # Number of sample sizes (10, 20, 50, 100)
+  # Number of sample sizes (10, 20, 50, 100, 500)
   for (j in 1:num.samps) {
     # Looking up Data to Use
     x <- liData[[i]][[1]][[j]]
@@ -101,9 +102,7 @@ for (i in 1:num.dist.test) {
     
     # Number of methods to test with
     for (k in 1:num.methods) {
-      # Evaluating using the correct method if(liMethods[[k]]=='myts.out'){ pvals <-
-      # power.res.onesamp(x, y=paste('q',null_dist[[i]],sep=''), null_param[[i]],
-      # f=liMethods[[k]], g=new.perm.test.out) }
+      # Evaluating using the correct method 
       pvals <- power.res.twosamp(x, y, 
                                  f = names(liMethods[k]), 
                                  fops = method_param[[k]], 
@@ -114,10 +113,11 @@ for (i in 1:num.dist.test) {
   }
   liPVals[[i]] <- pval_samp
 }
+
 # Naming the PVals function
 for (i in 1:num.dist.test) {
-  names(liPVals)[i] <- paste(dist[[i]], "(", paste(param[[i]], collapse = ","), ")", " vs ",
-                             null_dist[[i]], " (", paste(null_param[[i]], collapse = ","), ")", 
+  names(liPVals)[i] <- paste(dist[[1]][[i]], "(", paste(param[[1]][[i]], collapse = ","), ")", " vs ",
+                             dist[[2]][[i]], " (", paste(param[[2]][[i]], collapse = ","), ")", 
                              sep = "")
   for (j in 1:num.samps) {
     names(liPVals[[i]])[j] <- paste("Samp Size =", lens[j], sep = " ")
@@ -150,8 +150,8 @@ for (i in 1:num.dist.test) {
 }
 # Naming the results list
 for (i in 1:num.dist.test) {
-  names(liResults)[i] <- paste(dist[[i]], "(", paste(param[[i]], collapse = ","), ")", " vs ",
-                               null_dist[[i]], " (", paste(null_param[[i]], collapse = ","), ")", 
+  names(liResults)[i] <- paste(dist[[1]][[i]], "(", paste(param[[1]][[i]], collapse = ","), ")", " vs ",
+                               dist[[2]][[i]], " (", paste(param[[2]][[i]], collapse = ","), ")", 
                                sep = "")
   for (j in 1:num.samps) {
     names(liResults[[i]])[j] <- paste("Samp Size =", lens[j], sep = " ")
