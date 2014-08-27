@@ -1,11 +1,15 @@
 # Test statistic functions
 Max_Quan_TS <- function(x, y, ..., interp = 4, do.plot = FALSE) {
-  # Computes maximum difference of quantiles Comments: OBC Using Linear Interpolation
-  # of the ECDF Recall: ECDF range is [1/n,1]. This is probably not realistic Args: x:
-  # A vector of observations for a R.V. (must be numeric) y: Either (1) Another vector
-  # of observations (two sample) (2) A quantile function such as qnorm (one sample)
-  # interp: method of interpolation used. For more details, see ?quantile do.plot:
-  # Creates a plot illustrating the statistic Returns: The value of the statistic
+  # Computes maximum difference of quantiles 
+  # Comments: OBC Using Linear Interpolation
+  # of the ECDF Recall: ECDF range is [1/n,1]. This is probably not realistic 
+  # Args: x: A vector of observations for a R.V. (must be numeric) 
+  # y: Either (1) Another vector
+  # of observations (two sample) 
+  # (2) A quantile function such as qnorm (one sample)
+  # interp: method of interpolation used. For more details, see ?quantile 
+  # do.plot: Creates a plot illustrating the statistic 
+  # Returns: The value of the statistic
   
   # Error Handling
   if (is.numeric(x) != TRUE) 
