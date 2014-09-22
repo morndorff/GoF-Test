@@ -159,11 +159,55 @@ Density_Estimate <- function(x,interp=4){
   dens_est <- approxfun(p_x, q1, yleft = min(q1), yright = max(q1))
 }
 
-Kernel_CDF_Estimate <- function(x){
-  pdf <- density(x)
-  f <- approxfun(pdf$x, pdf$y, yleft=0, yright=0)
-  function(lim) {
-    cdf <- integrate(f, -Inf, lim)
+Kernel_CDF_Estimate <- function(x, opt="cumsum"){
+  if(opt=="integrate"){
+    pdf <- density(x)
+    f <- approxfun(pdf$x, pdf$y, yleft=0, yright=0)
+    cdf_fun <- function(lim) {
+      cdf <- integrate(f, -Inf, lim, stop.on.error=FALSE)
+    }
+    return(cdf_fun)
+  }
+  if(opt=="cumsum"){
+    pdf <- density(x)
+    y <- cumsum(pdf$y)
+    cdf <- pdf
+    cdf$y <- y/max(y)
+    cdf <- approxfun(cdf$x, cdf$y, yleft=0, yright=1)
+    return(cdf)
+  }
+}
+
+Kernel_CDF_Inverse <- function(x, opt="cumsum"){
+  if(opt=="integrate"){
+    pdf <- density(x)
+    f <- approxfun(pdf$y, pdf$x, yleft=0, yright=0)
+    inv_cdf_fun <- function(lim) {
+      cdf <- integrate(f, -Inf, lim, stop.on.error=FALSE)
+    }
+    return(inv_cdf_fun)
+  }
+  if(opt=="cumsum"){
+    pdf <- density(x)
+    y <- cumsum(pdf$y)
+    inv_cdf <- pdf
+    inv_cdf$y <- y/max(y)
+    inv_cdf <- approxfun(inv_cdf$y, inv_cdf$x, yleft=min(inv_cdf$x), yright=max(inv_cdf$x))
+    return(inv_cdf)
+  }
+  
+}
+
+Kernel_Estimates <- function(x, opt="cumsum"){
+  # Efficient combining of Kernel_CDF_Inverse and Kernel_CDF_Estimate
+  if(opt=="cumsum"){
+    pdf <- density(x)
+    y <- cumsum(pdf$y)
+    cdf <- pdf
+    cdf$y <- y/max(y)
+    inv_cdf <- approxfun(cdf$y, cdf$x, yleft=min(cdf$x), yright=max(cdf$x))
+    cdf <- approxfun(cdf$x, cdf$y, yleft=0, yright=1)
+    return(list("CDF" = cdf,"CDF Inverse"=inv_cdf))
   }
 }
 
@@ -173,13 +217,14 @@ Delta_Calc <- function(x, y, lenx, leny){
   delta <- min(x_min, y_min)
 }
 
-
-Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.25, opt=FALSE) {
-  # Computes area based on trapezoid areas 
+Quad_OS_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE) {
+  # Computes area based quadrilateral areas based on the order statistics
+  # Calculates n boxes, where n is the sample size
+  #
+  # TODO: make work for unequal sample sizes
+  #
   # Args: x: A vector of observations for a R.V. (must be numeric) 
   # y: Either (1) Another vector of observations (two sample)
-  #           (2) A quantile function such as qnorm (one sample) 
-  # size: controls height of trapezoids 
   # Returns: The value of the statistic
   
   # Error Handling
@@ -194,7 +239,6 @@ Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.2
   # Placeholder for Delta
   delta <- Delta_Calc(x,y)
   
-  
   # Two Sample Test
   
   # Density estimate for x and y samples
@@ -206,19 +250,19 @@ Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.2
   x_plus_delta <- x + delta
   
   #p_x_minus_delta <- x_density(x_minus_delta)$value
-  p_x_minus_delta <- sapply(x_minus_delta, function(x) x_density(x)$value)
+  p_x_minus_delta <- sapply(x_minus_delta, function(x) x_density(x))
   
   #p_x_plus_delta <- x_density(x_plus_delta)$value
-  p_x_plus_delta <- sapply(x_plus_delta, function(x) x_density(x)$value)
+  p_x_plus_delta <- sapply(x_plus_delta, function(x) x_density(x))
   
   y_minus_delta <- y - delta
   y_plus_delta <- y + delta
   
   #p_y_minus_delta <- y_density(y_minus_delta)$value
-  p_y_minus_delta <- sapply(y_minus_delta, function(y) y_density(y)$value)
+  p_y_minus_delta <- sapply(y_minus_delta, function(y) y_density(y))
   
   #p_y_plus_delta <- y_density(y_plus_delta)$values
-  p_y_plus_delta <- sapply(y_plus_delta, function(y) y_density(y)$value)
+  p_y_plus_delta <- sapply(y_plus_delta, function(y) y_density(y))
   
   x1 <- as.list(as.data.frame(rbind(x_minus_delta, p_x_minus_delta)))
   x2 <- as.list(as.data.frame(rbind(x_plus_delta, p_x_plus_delta)))
@@ -227,10 +271,136 @@ Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, size = 0.2
   
   coords <- rbind(x1,x2,y2,y1)
   coords <- as.list(as.data.frame(coords))
+  # Draw Plot Option
+  if(do.plot==TRUE){
+    x_points <- seq(min(x)-sd(x), max(x)+sd(x), length.out=500)
+    x_out <- sapply(x_points, function(x) x_density(x)$value)
+    
+    y_points <- seq(min(y)-sd(y), max(y)+sd(y), length.out=500)
+    y_out <- sapply(y_points, function(x) y_density(x)$value)
+    
+    plot(x_points,x_out, xlim = c(min(x[1]-sd(x), y[1]-sd(y)), max(x[lenx]+sd(x), y[lenx]+sd(y))), ylab = "Probs", xlab = "Data", 
+         main = "Two Estimated ECDFS, Areas in Blue", type="l")  #plot 1st sample points
+    lines(y_points,y_out,col="red")
+    
+    plot_polygons <- function(liCoords){
+      plotx <- sapply(liCoords,function(x) x[1])  
+      ploty <- sapply(liCoords,function(x) x[2])  
+      my_plot <- polygon(plotx,ploty, col="blue")
+      my_plot
+    }
+    sapply(coords, plot_polygons)
+  }
+  # Diagnostic Option. Can be deleted later.
   if(opt=="coords"){
     return(coords)
   }
+  # Calculating the value of the statistic
   areas <- lapply(coords, function(x) quad.area(x[[1]],x[[2]],x[[3]],x[[4]]))
+  total_area <- sum(unlist(areas))
+}
+
+Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE,maxval=FALSE) {
+  # Computes area based quadrilateral areas based on the order statistics
+  # Calculates n boxes, where n is the sample size
+  #
+  # TODO: make work for unequal sample sizes
+  #
+  # Args: x: A vector of observations for a R.V. (must be numeric) 
+  # y: Either (1) Another vector of observations (two sample)
+  # Returns: The value of the statistic
+  
+  # Error Handling
+  if (is.numeric(x) != TRUE) 
+    stop("x must be numeric")
+  
+  x <- sort(x)
+  lenx <- length(x)
+  y <- sort(y)
+  leny <- length(y)
+  
+  # Placeholder for Delta
+  delta <- Delta_Calc(x,y)
+  
+  # Two Sample Test
+  
+  # Quantile function estimate for x and y samples
+  x_functions <- Kernel_Estimates(x)
+  y_functions <- Kernel_Estimates(y)
+  
+#   x_quantile_fun <- Kernel_CDF_Inverse(x)
+#   y_quantile_fun <- Kernel_CDF_Inverse(y)
+#   
+#   x_density <- Kernel_CDF_Estimate(x)
+#   y_density <- Kernel_CDF_Estimate(y)  
+
+  x_quantile_fun <- x_functions[["CDF Inverse"]]
+  y_quantile_fun <- y_functions[["CDF Inverse"]]
+  
+  x_density <- x_functions[["CDF"]]
+  y_density <- y_functions[["CDF"]]
+  
+  # Finding values of the quantile function desired
+  n <- round(min(lenx, leny) / 4)
+  p <- seq(1/(n+1), n/(n+1), length.out=n) 
+  
+  x_quantiles <- x_quantile_fun(p)
+  y_quantiles <- y_quantile_fun(p)
+  
+  x_minus_delta <- x_quantiles - delta
+  x_plus_delta <- x_quantiles + delta
+  
+  #p_x_minus_delta <- x_density(x_minus_delta)$value
+  p_x_minus_delta <- sapply(x_minus_delta, function(x) x_density(x))
+  
+  #p_x_plus_delta <- x_density(x_plus_delta)$value
+  p_x_plus_delta <- sapply(x_plus_delta, function(x) x_density(x))
+  
+  y_minus_delta <- y_quantiles - delta
+  y_plus_delta <- y_quantiles + delta
+  
+  #p_y_minus_delta <- y_density(y_minus_delta)$value
+  p_y_minus_delta <- sapply(y_minus_delta, function(y) y_density(y))
+  
+  #p_y_plus_delta <- y_density(y_plus_delta)$values
+  p_y_plus_delta <- sapply(y_plus_delta, function(y) y_density(y))
+  
+  x1 <- as.list(as.data.frame(rbind(x_minus_delta, p_x_minus_delta)))
+  x2 <- as.list(as.data.frame(rbind(x_plus_delta, p_x_plus_delta)))
+  y1 <- as.list(as.data.frame(rbind(y_minus_delta, p_y_minus_delta)))
+  y2 <- as.list(as.data.frame(rbind(y_plus_delta, p_y_plus_delta)))
+  
+  coords <- rbind(x1,x2,y2,y1)
+  coords <- as.list(as.data.frame(coords))
+  # Draw Plot Option
+  if(do.plot==TRUE){
+    x_points <- seq(min(x)-sd(x), max(x)+sd(x), length.out=500)
+    x_out <- sapply(x_points, function(x) x_density(x)$value)
+    
+    y_points <- seq(min(y)-sd(y), max(y)+sd(y), length.out=500)
+    y_out <- sapply(y_points, function(x) y_density(x)$value)
+    
+    plot(x_points,x_out, xlim = c(min(x[1]-sd(x), y[1]-sd(y)), max(x[lenx]+sd(x), y[lenx]+sd(y))), ylab = "Probs", xlab = "Data", 
+         main = "Two Estimated ECDFS, Areas in Blue", type="l")  #plot 1st sample points
+    lines(y_points,y_out,col="red")
+    
+    plot_polygons <- function(liCoords){
+      plotx <- sapply(liCoords,function(x) x[1])  
+      ploty <- sapply(liCoords,function(x) x[2])  
+      my_plot <- polygon(plotx,ploty, col="blue")
+      my_plot
+    }
+    sapply(coords, plot_polygons)
+  }
+  # Diagnostic Option. Can be deleted later.
+  if(opt=="coords"){
+    return(coords)
+  }
+  # Calculating the value of the statistic
+  areas <- lapply(coords, function(x) quad.area(x[[1]],x[[2]],x[[3]],x[[4]]))
+  if(maxval==TRUE){
+    return(max(unlist(areas)))
+  }
   total_area <- sum(unlist(areas))
 }
 
