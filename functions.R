@@ -137,7 +137,7 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   }
   if (is.numeric(y)){
     # Calculating observed test statistic
-    ts.obs <- do.call(f, list(x,y, fops))
+    ts.obs <- do.call(f, c(list(x,y), fops))
   }
     ts.random <- vector(mode = "numeric", length = num.perm)
     
