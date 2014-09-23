@@ -271,25 +271,10 @@ Quad_OS_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE) {
   
   coords <- rbind(x1,x2,y2,y1)
   coords <- as.list(as.data.frame(coords))
+
   # Draw Plot Option
   if(do.plot==TRUE){
-    x_points <- seq(min(x)-sd(x), max(x)+sd(x), length.out=500)
-    x_out <- sapply(x_points, function(x) x_density(x)$value)
-    
-    y_points <- seq(min(y)-sd(y), max(y)+sd(y), length.out=500)
-    y_out <- sapply(y_points, function(x) y_density(x)$value)
-    
-    plot(x_points,x_out, xlim = c(min(x[1]-sd(x), y[1]-sd(y)), max(x[lenx]+sd(x), y[lenx]+sd(y))), ylab = "Probs", xlab = "Data", 
-         main = "Two Estimated ECDFS, Areas in Blue", type="l")  #plot 1st sample points
-    lines(y_points,y_out,col="red")
-    
-    plot_polygons <- function(liCoords){
-      plotx <- sapply(liCoords,function(x) x[1])  
-      ploty <- sapply(liCoords,function(x) x[2])  
-      my_plot <- polygon(plotx,ploty, col="blue")
-      my_plot
-    }
-    sapply(coords, plot_polygons)
+    Plot_Quad_Areas(x=x, y=y, lenx=lenx, coords=coords, xdens=x_density, ydens=y_density)
   }
   # Diagnostic Option. Can be deleted later.
   if(opt=="coords"){
@@ -300,7 +285,11 @@ Quad_OS_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE) {
   total_area <- sum(unlist(areas))
 }
 
-Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE,maxval=FALSE) {
+Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, 
+                              do.plot = FALSE, 
+                              opt=FALSE,
+                              maxval=FALSE, 
+                              div=4) {
   # Computes area based quadrilateral areas based on the order statistics
   # Calculates n boxes, where n is the sample size
   #
@@ -320,19 +309,13 @@ Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE,
   leny <- length(y)
   
   # Placeholder for Delta
-  delta <- Delta_Calc(x,y)
+  #delta <- Delta_Calc(x,y)
   
   # Two Sample Test
   
   # Quantile function estimate for x and y samples
   x_functions <- Kernel_Estimates(x)
   y_functions <- Kernel_Estimates(y)
-  
-#   x_quantile_fun <- Kernel_CDF_Inverse(x)
-#   y_quantile_fun <- Kernel_CDF_Inverse(y)
-#   
-#   x_density <- Kernel_CDF_Estimate(x)
-#   y_density <- Kernel_CDF_Estimate(y)  
 
   x_quantile_fun <- x_functions[["CDF Inverse"]]
   y_quantile_fun <- y_functions[["CDF Inverse"]]
@@ -340,67 +323,63 @@ Quad_Quan_Area_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, opt=FALSE,
   x_density <- x_functions[["CDF"]]
   y_density <- y_functions[["CDF"]]
   
-  # Finding values of the quantile function desired
-  n <- round(min(lenx, leny) / 4)
-  p <- seq(1/(n+1), n/(n+1), length.out=n) 
   
+  # Finding values of the quantile function desired
+  # Should be leq to n
+  n <- round(min(lenx, leny) / div)
+  p <- seq(1/(n+1), n/(n+1), length.out=n) 
+    
+  # Start from the y axis (0 < p < 1)
   x_quantiles <- x_quantile_fun(p)
   y_quantiles <- y_quantile_fun(p)
+
+  # New Delta Calc
+  delta <- min(diff(x_quantiles)/2, diff(y_quantiles)/2)
   
+  # Now that we are on data axis, add plus or minus delta
   x_minus_delta <- x_quantiles - delta
   x_plus_delta <- x_quantiles + delta
-  
-  #p_x_minus_delta <- x_density(x_minus_delta)$value
-  p_x_minus_delta <- sapply(x_minus_delta, function(x) x_density(x))
-  
-  #p_x_plus_delta <- x_density(x_plus_delta)$value
-  p_x_plus_delta <- sapply(x_plus_delta, function(x) x_density(x))
-  
   y_minus_delta <- y_quantiles - delta
   y_plus_delta <- y_quantiles + delta
   
-  #p_y_minus_delta <- y_density(y_minus_delta)$value
-  p_y_minus_delta <- sapply(y_minus_delta, function(y) y_density(y))
+  # Reapply density estimates
+  p_x_minus_delta <- sapply(x_minus_delta, function(x) x_density(x))
+  p_x_plus_delta <- sapply(x_plus_delta, function(x) x_density(x))
+  p_y_minus_delta <- sapply(y_minus_delta, function(x) y_density(x))
+  p_y_plus_delta <- sapply(y_plus_delta, function(x) y_density(x))
   
-  #p_y_plus_delta <- y_density(y_plus_delta)$values
-  p_y_plus_delta <- sapply(y_plus_delta, function(y) y_density(y))
-  
+  # getting everything as coordinates
+  # (x,y)
   x1 <- as.list(as.data.frame(rbind(x_minus_delta, p_x_minus_delta)))
   x2 <- as.list(as.data.frame(rbind(x_plus_delta, p_x_plus_delta)))
   y1 <- as.list(as.data.frame(rbind(y_minus_delta, p_y_minus_delta)))
   y2 <- as.list(as.data.frame(rbind(y_plus_delta, p_y_plus_delta)))
   
   coords <- rbind(x1,x2,y2,y1)
+  # (x - delta, f(x - delta))
+  # (x + delta, f(x + delta))
+  # (y - delta, f(y - delta))
+  # (y + delta, f(y + delta)) 
   coords <- as.list(as.data.frame(coords))
-  # Draw Plot Option
-  if(do.plot==TRUE){
-    x_points <- seq(min(x)-sd(x), max(x)+sd(x), length.out=500)
-    x_out <- sapply(x_points, function(x) x_density(x)$value)
-    
-    y_points <- seq(min(y)-sd(y), max(y)+sd(y), length.out=500)
-    y_out <- sapply(y_points, function(x) y_density(x)$value)
-    
-    plot(x_points,x_out, xlim = c(min(x[1]-sd(x), y[1]-sd(y)), max(x[lenx]+sd(x), y[lenx]+sd(y))), ylab = "Probs", xlab = "Data", 
-         main = "Two Estimated ECDFS, Areas in Blue", type="l")  #plot 1st sample points
-    lines(y_points,y_out,col="red")
-    
-    plot_polygons <- function(liCoords){
-      plotx <- sapply(liCoords,function(x) x[1])  
-      ploty <- sapply(liCoords,function(x) x[2])  
-      my_plot <- polygon(plotx,ploty, col="blue")
-      my_plot
-    }
-    sapply(coords, plot_polygons)
-  }
+
   # Diagnostic Option. Can be deleted later.
   if(opt=="coords"){
     return(coords)
   }
-  # Calculating the value of the statistic
+  # Calculating the area values
   areas <- lapply(coords, function(x) quad.area(x[[1]],x[[2]],x[[3]],x[[4]]))
+  
+  # Draw Plot Option
+  if(do.plot==TRUE & maxval==FALSE){
+    Plot_Quad_Areas(x=x,y=y,lenx=lenx,coords=coords, xdens=x_density, ydens=y_density)
+  }
+  if(do.plot==TRUE & maxval==TRUE){
+    Plot_Quad_Areas(x=x,y=y,lenx=lenx,coords=coords, xdens=x_density, ydens=y_density, areas=areas)
+  }
   if(maxval==TRUE){
     return(max(unlist(areas)))
-  }
+  }  
+  # Calculating total area
   total_area <- sum(unlist(areas))
 }
 

@@ -16,16 +16,16 @@ y_density <- Kernel_CDF_Estimate(y)
 a <- Quad_Quan_Area_TS(x,y)
 
 x_points <- seq(min(x)-sd(x), max(x)+sd(x),length.out=500)
-x_out <- sapply(x_points, function(x) x_density(x)$value)
+x_out <- sapply(x_points, function(x) x_density(x))
 
 y_points <- seq(min(y)-sd(y), max(y)+sd(y),length.out=500)
-y_out <- sapply(y_points, function(x) y_density(x)$value)
+y_out <- sapply(y_points, function(x) y_density(x))
 
 plot(x_points,x_out, xlim = c(min(x[1]-sd(x), y[1]-sd(y)), max(x[lenx]+sd(x), y[lenx]+sd(y))), ylab = "Probs", xlab = "Data", 
      main = "ECDF and Points", type="l")  #plot 1st sample points
 lines(y_points,y_out,col="red")
 
-coords <- Quad_Quan_Area_TS(x,y,opt="coords")
+coords <- Quad_OS_Area_TS(x,y,opt="coords")
 coords[[1]]
 # points(-1.67,0.133)
 # points(-0.84,0.40)

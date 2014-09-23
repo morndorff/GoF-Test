@@ -98,3 +98,31 @@ myqq <- function(x, y) {
     results <- list(sx, sy)
     return(results)
 } 
+
+Plot_Quad_Areas <- function (x, y, lenx, coords, xdens, ydens, areas=NULL) {
+  # Plotting the Quad_OS_Area_TS
+  # x_density comes from inside the TS function
+  x_points <- seq(min(x)-sd(x), max(x)+sd(x), length.out=500)
+  x_out <- sapply(x_points, function(x) xdens(x))
+  
+  y_points <- seq(min(y)-sd(y), max(y)+sd(y), length.out=500)
+  y_out <- sapply(y_points, function(x) ydens(x))
+  
+  plot(x_points,x_out, xlim = c(min(x[1]-sd(x), y[1]-sd(y)), max(x[lenx]+sd(x), y[lenx]+sd(y))), ylab = "Probs", xlab = "Data", 
+       main = "Two Estimated ECDFS, Areas in Blue", type="l")  #plot 1st sample points
+  lines(y_points,y_out,col="red")
+  
+  plot_polygons <- function(liCoords, color="blue"){
+    plotx <- sapply(liCoords,function(x) x[1])  
+    ploty <- sapply(liCoords,function(x) x[2])  
+    my_plot <- polygon(plotx,ploty, col=color)
+    my_plot
+  }
+  sapply(coords, plot_polygons)
+  if(is.null(areas)==FALSE){
+    big_area <- as.numeric(which.max(areas))
+    plot_polygons(coords[[big_area]], color="red")
+  }
+}
+
+#Plot_Quad_Quantiles
