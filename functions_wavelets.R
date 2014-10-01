@@ -1,11 +1,11 @@
-wave.den <- function (x, y, n=2^5, doplot=F) 
+wave.den <- function (x, y, n=2^5, doplot=F, wf="haar") 
 {
   # Get cdfs:
   F.x <- ecdf(x)
   F.y <- ecdf(y)
   
   z <- seq(range(x, y)[1], range(x, y)[2], length=n)
-  F.dwt <- dwt(F.x(z) - F.y(z), wf="haar", n.levels=log(n, 2))
+  F.dwt <- dwt(F.x(z) - F.y(z), wf=wf, n.levels=log(n, 2))
   oc <- unlist(F.dwt)
   oc <- max(abs(oc))
   #test_ks <- max(abs(F.x(z)-F.y(z)))
@@ -87,7 +87,13 @@ wave.den.power <- function (n=2^5, p=500, doplot=F, m=100, doplot1=F)
   c(oc=mean(power.vec[, 1]), ks=mean(power.vec[, 2]), frac=mean(power.vec[, 1]) / mean(power.vec[, 2]))
 }
 
-wave.energy <- function (x, y, n=2^5, doplot=F, opt="max") 
+wave.energy <- function (x, y, 
+                         n=2^5, 
+                         doplot=F, 
+                         opt="max", 
+                         wf="haar",
+                         square=FALSE,
+                         norm=TRUE) 
 {
   if(opt !="max" & opt != "sum") stop ("invalid option value")
   # Get cdfs:
@@ -96,21 +102,39 @@ wave.energy <- function (x, y, n=2^5, doplot=F, opt="max")
   
   z <- seq(range(x, y)[1], range(x, y)[2], length=n)
   
-  F.x.dwt <- dwt(F.x(z), wf="haar", n.levels=log(n, 2))
-  F.y.dwt <- dwt(F.y(z), wf="haar", n.levels=log(n, 2))
+  F.x.dwt <- dwt(F.x(z), wf=wf, n.levels=log(n, 2))
+  F.y.dwt <- dwt(F.y(z), wf=wf, n.levels=log(n, 2))
   x.dwt <- unlist(F.x.dwt)
   y.dwt <- unlist(F.y.dwt)
-  #	x.dwt <- (rev(sort(abs(x.dwt))))^2
-  #	y.dwt <- (rev(sort(abs(y.dwt))))^2
-  
-  x.dwt <- rev(sort(abs(x.dwt)))
-  y.dwt <- rev(sort(abs(y.dwt)))
-  
+
+  if(square==FALSE){
+  x.dwt <- sort(abs(x.dwt), decreasing = TRUE)
+  y.dwt <- sort(abs(y.dwt), decreasing = TRUE)
+  }
+  # What if we square the coefficients?
+  if(square){
+  x.dwt <- sort(x.dwt^2, decreasing=TRUE)
+  y.dwt <- sort(y.dwt^2, decreasing=TRUE)
+  }
+
   xx <- cumsum(x.dwt)
   yy <- cumsum(y.dwt)
   # return(max(yy))
+  if(norm==FALSE){
+    if(max(xx) > max(yy)){
+      xx <- xx / max(xx)
+      yy <- yy / max(xx)
+    } else{
+      xx <- xx / max(yy)
+      yy <- yy / max(yy)
+    }
+  }
+  if(norm==TRUE){  
   xx <- xx / max(xx)
   yy <- yy / max(yy)
+  }
+  
+  
   
   if(doplot){
     plot(xx, type="l", ylim=range(xx, yy, xx - yy))

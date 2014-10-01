@@ -1,4 +1,25 @@
 # Function archive
+power.res <- function(x, y, f, g = perm.test, boot = FALSE) {
+  # A nice function for power calculations Takes as input a two matrices. Each row a
+  # different draw of col's from the row dist.
+  dim.x <- dim(x)
+  fun <- f
+  pv <- NULL
+  if (boot) {
+    for (i in 1:dim.x[1]) {
+      a <- boot.test(x[i, ], y[i, ], f)
+      pv[i] <- a[[1]]
+    }
+    z <- pv
+    return(z)
+  }
+  for (i in 1:dim.x[1]) {
+    a <- g(x[i, ], y[i, ], f = fun)
+    pv[i] <- a[[1]]
+  }
+  z <- pv
+  return(z)
+}
 
 perm.test <- function(x, y, ..., f, num.perm = 2001, diag = FALSE, exact = TRUE) {
   # Runs a permutation test for a given function (Note: Input function should JUST

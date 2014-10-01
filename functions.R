@@ -6,99 +6,6 @@ source("functions_string.R")
 source("functions_tstats.R")
 source("functions_wavelets.R")
 
-power.res <- function(x, y, f, g = perm.test, boot = FALSE) {
-    # A nice function for power calculations Takes as input a two matrices. Each row a
-    # different draw of col's from the row dist.
-    dim.x <- dim(x)
-    fun <- f
-    pv <- NULL
-    if (boot) {
-        for (i in 1:dim.x[1]) {
-            a <- boot.test(x[i, ], y[i, ], f)
-            pv[i] <- a[[1]]
-        }
-        z <- pv
-        return(z)
-    }
-    for (i in 1:dim.x[1]) {
-        a <- g(x[i, ], y[i, ], f = fun)
-        pv[i] <- a[[1]]
-    }
-    z <- pv
-    return(z)
-}
-power.res.exact <- function(x, dist, ..., f, boot = FALSE) {
-    # Does test of distribution based on EXACT quantiles of hypothesized distribution
-    
-    dim.x <- dim(x)
-    pv <- NULL
-    if (boot) {
-        for (i in 1:dim.x[1]) {
-            a <- boot.test(x[i, ], dist, ..., f)
-            pv[i] <- a[[1]]
-        }
-        z <- pv
-        return(z)
-    }
-    for (i in 1:dim.x[1]) {
-        a <- perm.test(x[i, ], dist, ..., f = f)
-        pv[i] <- a[[1]]
-    }
-    z <- pv
-    return(z)
-}
-quad.area <- function(x1, x2, y1, y2) {
-    t1 <- tri.area(x1, x2, y1)
-    t2 <- tri.area(x2, y1, y2)
-    area <- t1 + t2
-    return(area)
-}
-tri.area <- function(x, y, z) {
-    area <- 0.5 * abs((x[1] - z[1]) * (y[2] - x[2]) - (x[1] - y[1]) * (z[2] - x[2]))
-    return(area)
-}
-boot.test <- function(x, y, f, num.perm = 1000, diag = FALSE, exact = TRUE) {
-    # Runs a BOOTSTRAP test for a given function (Note: Input function should JUST
-    # output p-value) Takes as input f, a function that returns a statistic
-    require(gtools)
-    lenx <- length(x)
-    leny <- length(y)
-    # First Step, combine into one dataset
-    z <- c(x, y)
-    lenz <- length(z)
-    # Calculate TS for the ACTUAL data
-    ts.obs <- f(x, y)
-    ts.random <- c(NULL)
-    ### 
-    if (lenz < 10 & exact == TRUE) {
-        all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
-            set = FALSE)
-        all.permx <- all.perm[, 1:lenx]
-        all.permy <- all.perm[, (lenx + 1):lenz]
-        exact.perm <- dim(all.perm)[1]
-        for (i in 1:exact.perm) {
-            ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
-        }
-        p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
-        c.val <- quantile(ts.random, probs = 0.95)
-    } else {
-        for (i in 1:num.perm) {
-            z1 <- sample(z, size = lenz, replace = TRUE)
-            a <- z1[1:lenx]
-            b <- z1[(lenx + 1):lenz]
-            ts.random[i] <- f(a, b)
-        }
-        p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
-        c.val <- quantile(ts.random, probs = 0.95)
-    }
-    
-    # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
-    # statistic
-    if (diag == TRUE) 
-        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random)) else {
-        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
-    }
-}
 perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
                       exact = FALSE, out=FALSE, do.plot=FALSE, ...) {
   #Args: 
@@ -206,24 +113,24 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   }
 }
 power.res.onesamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.test, ...) {
-    # Args: 
-    # x: numeric matrix 
-    # y: either: function name, character naming a function, or
-    # list with the format list(qnorm=qnorm)
-    dim.x <- dim(x)
-    fun <- f
-    if (is.character(f)) 
-        fun <- get(fun, mode = "function", envir = parent.frame())
-    if (is.function(y)) 
-        y <- as.character(substitute(y))
-    if (is.character(y)) 
-        y <- chartoli(y)
-    pv <- vector(mode = "numeric", length = dim.x[1])
-    for (i in 1:dim.x[1]) {
-        a <- g(x[i, ], y, distops, f = fun, fops)
-        pv[i] <- a[[1]]
-    }
-    return(pv)
+  # Args: 
+  # x: numeric matrix 
+  # y: either: function name, character naming a function, or
+  # list with the format list(qnorm=qnorm)
+  dim.x <- dim(x)
+  fun <- f
+  if (is.character(f)) 
+    fun <- get(fun, mode = "function", envir = parent.frame())
+  if (is.function(y)) 
+    y <- as.character(substitute(y))
+  if (is.character(y)) 
+    y <- chartoli(y)
+  pv <- vector(mode = "numeric", length = dim.x[1])
+  for (i in 1:dim.x[1]) {
+    a <- g(x[i, ], y, distops, f = fun, fops)
+    pv[i] <- a[[1]]
+  }
+  return(pv)
 } 
 power.res.twosamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.test, ...) {
   # Args: 
@@ -234,7 +141,7 @@ power.res.twosamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.tes
   fun <- f
   if (is.character(f)) 
     fun <- get(fun, mode = "function", envir = parent.frame())
-
+  
   pv <- vector(mode = "numeric", length = dim.x[1])
   for (i in 1:dim.x[1]) {
     a <- g(x[i, ], y[i, ], distops, f = fun, fops)
@@ -242,6 +149,79 @@ power.res.twosamp <- function(x, y, distops = NULL, f, fops = NULL, g = perm.tes
   }
   return(pv)
 } 
+
+power.res.exact <- function(x, dist, ..., f, boot = FALSE) {
+    # Does test of distribution based on EXACT quantiles of hypothesized distribution
+    
+    dim.x <- dim(x)
+    pv <- NULL
+    if (boot) {
+        for (i in 1:dim.x[1]) {
+            a <- boot.test(x[i, ], dist, ..., f)
+            pv[i] <- a[[1]]
+        }
+        z <- pv
+        return(z)
+    }
+    for (i in 1:dim.x[1]) {
+        a <- perm.test(x[i, ], dist, ..., f = f)
+        pv[i] <- a[[1]]
+    }
+    z <- pv
+    return(z)
+}
+quad.area <- function(x1, x2, y1, y2) {
+    t1 <- tri.area(x1, x2, y1)
+    t2 <- tri.area(x2, y1, y2)
+    area <- t1 + t2
+    return(area)
+}
+tri.area <- function(x, y, z) {
+    area <- 0.5 * abs((x[1] - z[1]) * (y[2] - x[2]) - (x[1] - y[1]) * (z[2] - x[2]))
+    return(area)
+}
+boot.test <- function(x, y, f, num.perm = 1000, diag = FALSE, exact = TRUE) {
+    # Runs a BOOTSTRAP test for a given function (Note: Input function should JUST
+    # output p-value) Takes as input f, a function that returns a statistic
+    require(gtools)
+    lenx <- length(x)
+    leny <- length(y)
+    # First Step, combine into one dataset
+    z <- c(x, y)
+    lenz <- length(z)
+    # Calculate TS for the ACTUAL data
+    ts.obs <- f(x, y)
+    ts.random <- c(NULL)
+    ### 
+    if (lenz < 10 & exact == TRUE) {
+        all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
+            set = FALSE)
+        all.permx <- all.perm[, 1:lenx]
+        all.permy <- all.perm[, (lenx + 1):lenz]
+        exact.perm <- dim(all.perm)[1]
+        for (i in 1:exact.perm) {
+            ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
+        }
+        p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
+        c.val <- quantile(ts.random, probs = 0.95)
+    } else {
+        for (i in 1:num.perm) {
+            z1 <- sample(z, size = lenz, replace = TRUE)
+            a <- z1[1:lenx]
+            b <- z1[(lenx + 1):lenz]
+            ts.random[i] <- f(a, b)
+        }
+        p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
+        c.val <- quantile(ts.random, probs = 0.95)
+    }
+    
+    # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
+    # statistic
+    if (diag == TRUE) 
+        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random)) else {
+        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
+    }
+}
 Make_Inter_CDF <- function(x,y,interp=4){
   z <-c(x,y)
   z <- sort(z)
