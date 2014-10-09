@@ -6,47 +6,7 @@ source("functions_string.R")
 source("functions_tstats.R")
 source("functions_wavelets.R")
 
-power.res <- function(x, y, f, g = perm.test, boot = FALSE) {
-    # A nice function for power calculations Takes as input a two matrices. Each row a
-    # different draw of col's from the row dist.
-    dim.x <- dim(x)
-    fun <- f
-    pv <- NULL
-    if (boot) {
-        for (i in 1:dim.x[1]) {
-            a <- boot.test(x[i, ], y[i, ], f)
-            pv[i] <- a[[1]]
-        }
-        z <- pv
-        return(z)
-    }
-    for (i in 1:dim.x[1]) {
-        a <- g(x[i, ], y[i, ], f = fun)
-        pv[i] <- a[[1]]
-    }
-    z <- pv
-    return(z)
-}
-power.res.exact <- function(x, dist, ..., f, boot = FALSE) {
-    # Does test of distribution based on EXACT quantiles of hypothesized distribution
-    
-    dim.x <- dim(x)
-    pv <- NULL
-    if (boot) {
-        for (i in 1:dim.x[1]) {
-            a <- boot.test(x[i, ], dist, ..., f)
-            pv[i] <- a[[1]]
-        }
-        z <- pv
-        return(z)
-    }
-    for (i in 1:dim.x[1]) {
-        a <- perm.test(x[i, ], dist, ..., f = f)
-        pv[i] <- a[[1]]
-    }
-    z <- pv
-    return(z)
-}
+
 quad.area <- function(x1, x2, y1, y2) {
     t1 <- tri.area(x1, x2, y1)
     t2 <- tri.area(x2, y1, y2)
@@ -101,7 +61,7 @@ boot.test <- function(x, y, f, num.perm = 1000, diag = FALSE, exact = TRUE) {
 }
 perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
                       exact = FALSE, out=FALSE, do.plot=FALSE, ...) {
-  #Args: 
+  # Args: 
   # x: numeric vector
   # y: numeric vector or quantile distribution (qgamma, qnorm)
   # distops: list describing quantile parameters (e.g. for qunif, list(min=0,max=2)
@@ -111,6 +71,8 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   # 
   # Output:
   # list containing observed test statistic, 
+  
+  # Error Checking 
   if (is.null(distops)==FALSE){
     if(is.list(distops)==FALSE) stop("distops must be a list")
   }
@@ -127,7 +89,7 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   if (is.function(y)) 
     y <- as.character(substitute(y))
   
-  # Calculating observed test statistic
+  # Calculating observed test statistic -------
   # One Sample
   if (is.character(y)) {
     y <- chartoli(y)
@@ -141,13 +103,13 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   if (is.numeric(y)){
     if (length(fops)== 0)
       fops <- NULL
-    if (is.null(fops[[1]])) # MUST BE EDITED ASAP. ONLY LETS ONE OPTION IN FOPS
+    if (is.null(fops[[1]])) # 
         fops <- NULL
     ts.obs <- do.call(f, c(list(x,y), fops))
   }
   ts.random <- vector(mode = "numeric", length = num.perm)
   
-  # Two sample
+  # Two sample ----------------
   if (is.numeric(y)) {
     z <- c(x, y)
     lenz <- length(z)
