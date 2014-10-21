@@ -5,48 +5,8 @@ source("functions_power.R")
 source("functions_string.R")
 source("functions_tstats.R")
 source("functions_wavelets.R")
+source("functions_SPS.R")
 
-power.res <- function(x, y, f, g = perm.test, boot = FALSE) {
-    # A nice function for power calculations Takes as input a two matrices. Each row a
-    # different draw of col's from the row dist.
-    dim.x <- dim(x)
-    fun <- f
-    pv <- NULL
-    if (boot) {
-        for (i in 1:dim.x[1]) {
-            a <- boot.test(x[i, ], y[i, ], f)
-            pv[i] <- a[[1]]
-        }
-        z <- pv
-        return(z)
-    }
-    for (i in 1:dim.x[1]) {
-        a <- g(x[i, ], y[i, ], f = fun)
-        pv[i] <- a[[1]]
-    }
-    z <- pv
-    return(z)
-}
-power.res.exact <- function(x, dist, ..., f, boot = FALSE) {
-    # Does test of distribution based on EXACT quantiles of hypothesized distribution
-    
-    dim.x <- dim(x)
-    pv <- NULL
-    if (boot) {
-        for (i in 1:dim.x[1]) {
-            a <- boot.test(x[i, ], dist, ..., f)
-            pv[i] <- a[[1]]
-        }
-        z <- pv
-        return(z)
-    }
-    for (i in 1:dim.x[1]) {
-        a <- perm.test(x[i, ], dist, ..., f = f)
-        pv[i] <- a[[1]]
-    }
-    z <- pv
-    return(z)
-}
 quad.area <- function(x1, x2, y1, y2) {
     t1 <- tri.area(x1, x2, y1)
     t2 <- tri.area(x2, y1, y2)
