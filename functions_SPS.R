@@ -10,19 +10,52 @@ Sim_IC_Process <- function(num.samp, run.length, dist, params){
   Proc <- matrix(make_sample(total_samps,dist,params),nrow=num.samp,ncol=run.length)
 }
 
+Sim_CP_Process <- function(num.samp,run.length,dist_one, param_one, 
+                           dist_two, param_two, bpoint){
+ samp_one <- (num.samp*bpoint)
+ samp_two <- (num.samp*(run.length-bpoint))
+ Proc_One <- matrix(make_sample(samp_one, dist_one, param_one),
+                    nrow=num.samp, ncol=bpoint)
+ Proc_Two <- matrix(make_sample(samp_two, dist_two, param_two),
+                    nrow=num.samp, ncol=run.length-bpoint)
+ CP_Proc <- cbind(Proc_One, Proc_Two)
+ attr(CP_Proc, "bp") <- bpoint
+ return(CP_Proc)
+}
+  
+
+
 Track_Stat <- function(proc,stat,doplot=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
   # proc: A matrix containing the process
   # stat: the statistic tracked
-  track <- vector(mode="list",length=dim(proc)[2])
+
   x <- apply(proc,2,stat)
   if(doplot){
-    plot(seq(1:dim(proc)[1]),x)
+    plot(seq(1:dim(proc)[2]),x)
     title("Statistic on Each Sample")
   }
+  x
 }
 
-Find_UCL <- function(Proc, stat, ARL=200){
-  
+Track_Stat_Over <- function(proc, stat, doplot=FALSE, detail=FALSE){
+  # Tracks the value of a statistic for a process
+  # Inputs:
+  # proc: A matrix containing the process
+  # stat: A two-sample test statistic
+  lenproc <- dim(proc)[2]
+  ts <- vector(mode="numeric", length=(lenproc-1))
+  for(i in 1:(lenproc-1)){
+    ts[i] <- stat(proc[, 1:i], proc[, (i+1):lenproc])
+  }
+  large <- which.max(ts)
+  if(detail){
+    namets <- vector(mode="character", length=(lenproc-1))
+    for(i in 1:(lenproc-1)){
+      namets[i] <- paste(1,":",i, " vs " , i+1, ":", lenproc, sep="")
+    }
+    names(ts) <- namets
+  }
+  out <- list("Estimated Tau"=large, "Test Stat"=ts)
 }

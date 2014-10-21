@@ -1,14 +1,28 @@
 # Testing and Creating Functions for Statistical Process Control
+rm(list=ls())
+source("functions.R")
+set.seed(5)
+Process <- Sim_IC_Process(num.samp=20, run.length=40, dist="norm", param=list(mean=0, sd=1))
 
-# Simulating an In Control Process
-Sim_IC_Process <- function(num.samp, run.length, dist, params){
-  # Simulates a process of run length N with samples of size k
-  # Inputs:
-  # num.samp: The size of the samples. 1 corresponds to one data point per run unit
-  # run.length: Length of the run
-  # dist: what distribution do the data come from
-  # params: what parameters to call from the dist function
-  total_samps <- num.samp*run.length
-  Proc <- matrix(make_sample(total_samps,dist,params),nrow=num.samp,ncol=run.length)
+Track_Stat(Process, mean, doplot=TRUE)
+testfun <- function(z){
+  x <- runif(1)
+  if(x > .5) y <- c(1)
+  if(x < .5) y <- c(1, 1)
+  y
 }
+Track_Stat(proc=Process, stat="testfun")
+Track_Stat(proc=Process, stat=testfun)
 
+
+testproc <- Sim_CP_Process(num.samp=20, run.length=40, 
+                           dist_one="norm", param_one=list(mean=0, sd=1), 
+                           dist_two="norm", param_two=list(mean=0, sd=2), bpoint=20)
+a <- Track_Stat_Over(testproc, stat=wave.den)
+a
+
+testproc <- Sim_CP_Process(num.samp=50, run.length=40,
+                           dist_one="norm", param_one=list(mean=0, sd=1), 
+                           dist_two="norm", param_two=list(mean=0, sd=2), bpoint=20)
+a <- Track_Stat_Over(testproc, stat=wave.den)
+a
