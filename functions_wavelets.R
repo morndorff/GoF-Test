@@ -1,9 +1,12 @@
-wave.den <- function (x, y, n=2^5, doplot=F, wf="haar") 
+wave.den <- function (x, y,  doplot=F, wf="haar")  #n=2^5
 {
   # Get cdfs:
   F.x <- ecdf(x)
   F.y <- ecdf(y)
   
+  ml <- min(length(x),length(y))
+  n <- floor(log2(ml))
+
   z <- seq(range(x, y)[1], range(x, y)[2], length=n)
   F.dwt <- dwt(F.x(z) - F.y(z), wf=wf, n.levels=log(n, 2))
   oc <- unlist(F.dwt)
@@ -88,7 +91,7 @@ wave.den.power <- function (n=2^5, p=500, doplot=F, m=100, doplot1=F)
 }
 
 wave.energy <- function (x, y, 
-                         n=2^5, 
+                         #n=2^5, 
                          doplot=F, 
                          opt="max", 
                          wf="haar",
@@ -100,6 +103,8 @@ wave.energy <- function (x, y,
   F.x <- ecdf(x)
   F.y <- ecdf(y)
   
+  ml <- min(length(x),length(y))
+  n <- floor(log2(ml))
   z <- seq(range(x, y)[1], range(x, y)[2], length=n)
   
   F.x.dwt <- dwt(F.x(z), wf=wf, n.levels=log(n, 2))

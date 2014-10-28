@@ -82,5 +82,10 @@ mtext("N=4, Threshold=7.32032")
 lines(z, F.thresh, col= "violetred" , lwd=2,type="l")
 
 
-#### Wave energy--------------
-Wave Energy Notes
+# Changing 'n' (number of sample points) in wave.den
+# Number is currently 32, regardless of sample size. Seems like it should be smallest
+# diadic number
+# Can use log2
+
+floor(log2(33))
+
