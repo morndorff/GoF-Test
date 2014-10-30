@@ -22,16 +22,14 @@ Sim_CP_Process <- function(num.samp,run.length,dist_one, param_one,
  attr(CP_Proc, "bp") <- bpoint
  return(CP_Proc)
 }
-  
 
-
-Track_Stat <- function(proc,stat,doplot=FALSE){
+Track_Stat <- function(proc,tstat,doplot=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
   # proc: A matrix containing the process
   # stat: the statistic tracked
 
-  x <- apply(proc,2,stat)
+  x <- apply(proc,2,tstat)
   if(doplot){
     plot(seq(1:dim(proc)[2]),x)
     title("Statistic on Each Sample")
@@ -39,7 +37,7 @@ Track_Stat <- function(proc,stat,doplot=FALSE){
   x
 }
 
-Track_Stat_Over <- function(proc, stat, doplot=FALSE, detail=FALSE){
+Track_Stat_Over <- function(proc, tstat, doplot=FALSE, detail=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
   # proc: A matrix containing the process
@@ -47,7 +45,7 @@ Track_Stat_Over <- function(proc, stat, doplot=FALSE, detail=FALSE){
   lenproc <- dim(proc)[2]
   ts <- vector(mode="numeric", length=(lenproc-1))
   for(i in 1:(lenproc-1)){
-    ts[i] <- stat(proc[, 1:i], proc[, (i+1):lenproc])
+    ts[i] <- tstat(proc[, 1:i], proc[, (i+1):lenproc])
   }
   large <- which.max(ts)
   if(detail){
@@ -58,4 +56,12 @@ Track_Stat_Over <- function(proc, stat, doplot=FALSE, detail=FALSE){
     names(ts) <- namets
   }
   out <- list("Estimated Tau"=large, "Test Stat"=ts)
+}
+
+Estimate_Tau <- function(proc, tstat, dist_ic, ...){
+  tau_stat <- NULL
+  tau_stat[1] <- tstat(proc[,1], y=dist_ic, ...)
+  tau_est <- Track_Stat_Over(proc, tstat)
+  tau_stat <- append(tau_stat, tau_est[[2]])
+  which.max(tau_stat)-1
 }
