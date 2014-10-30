@@ -46,6 +46,7 @@ cor(haar_curve, la8_curve) #yikes
 haar_curve_sum <- power.res.twosamp(x,y, f="wave.energy", fops=list(wf="la8", opt="sum"))
 la8_curve_sum<- power.res.twosamp(x,y, f="wave.energy", fops=list(wf="haar", opt="sum"))
 
+# Adding One Sample Capabilities to Wavelet Functions
 
 
 
