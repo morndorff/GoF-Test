@@ -37,16 +37,26 @@ Track_Stat <- function(proc,tstat,doplot=FALSE){
   x
 }
 
-Track_Stat_Over <- function(proc, tstat, doplot=FALSE, detail=FALSE){
+Track_Stat_Over <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
   # proc: A matrix containing the process
   # stat: A two-sample test statistic
-  lenproc <- dim(proc)[2]
-  ts <- vector(mode="numeric", length=(lenproc-1))
+  
+  
+  
+  
+  
+  lenproc <- dim(proc)[2] # run length of the process
+  
+  ts <- matrix(nrow=2,ncol=lenproc)
   for(i in 1:(lenproc-1)){
-    ts[i] <- tstat(proc[, 1:i], proc[, (i+1):lenproc])
+    ts[1, i] <- tstat(proc[, 1:i], dist_ic, ...)
+    ts[2, i] <- tstat(proc[, 
   }
+  
+  
+  
   large <- which.max(ts)
   if(detail){
     namets <- vector(mode="character", length=(lenproc-1))
