@@ -106,6 +106,14 @@ ARL_Proc <- function(UCL){
   return(list(RLs, e_time))
 }
 
+JKnife_Est <- function(data, tstat, ...){
+  jack.est <- vector(mode="numeric", length=length(data))
+  for(i in seq_along(data)){
+    jack.est[i] <- tstat(x[-i], ...)
+  }
+  jack.mean <- mean(jack.est)
+}
+
 Old_TSO <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
