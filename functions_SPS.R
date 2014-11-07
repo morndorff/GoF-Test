@@ -11,6 +11,7 @@ Sim_IC_Process <- function(num.samp, run.length, dist, params){
 }
 
 Sim_IC_Process_Iter <- function(proc=NULL, num.samp, dist, params){
+  # Simulate a Incontrol Process Iteratively
   if(is.null(proc)){
     proc <- matrix(make_sample(num.samp, dist, params), nrow=num.samp, ncol=1)
     return(proc)
@@ -18,8 +19,6 @@ Sim_IC_Process_Iter <- function(proc=NULL, num.samp, dist, params){
   new_samp <- make_sample(num.samp, dist, params)
   proc <- cbind(proc, new_samp)
 }
-
-
 
 Sim_CP_Process <- function(num.samp,run.length,dist_one, param_one, 
                            dist_two, param_two, bpoint){
@@ -72,7 +71,7 @@ Process_Stat <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   STAT
 }
 
-Find_RL <- function(num.samp, dist, params, tstat, UCL){
+Find_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
   # params - Incontrol distribution parameters
@@ -93,12 +92,30 @@ Find_RL <- function(num.samp, dist, params, tstat, UCL){
   return(res)
 }
 
+Find_RL_Fast <- function(num.samp, dist, params, tstat, UCL){
+  Proc <- NULL
+  h_t <- 0
+  theta_p <- NULL
+  theta_m <- NULL
+  while(h_t < max(UCL)){
+    Proc <- Sim_IC_Process_Iter(num.samp=num.samp, dist=dist, param=params, proc=Proc)
+    theta <- update_tau(nvec=Proc[,dim(Proc)[2]], theta_p=theta_p, theta_m=theta_m, tstat=tstat, dist_ic="pnorm")
+    theta_p <- theta[,1] 
+    theta_m <- theta[,2]
+    h_t <- append(h_t, find_max_dif(theta))
+  }
+  RL <- sapply(UCL, function(x) min(which(h_t >= x)))
+  lenproc <- dim(Proc)[2]
+  res <- list("h_t"=h_t, "Length of Process"=lenproc, "RL for Corresponding UCL"=RL, "UCLs"=UCL)
+}
+
+# Temporary function
 ARL_Proc <- function(UCL){
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
   e_time <- 0
   while(e_time < 2*60*60){
-    RLs_det <- Find_RL(num.samp=30, dist="norm", params=list(mean=0, sd=1), tstat=wave.den, UCL=UCL)
+    RLs_det <- Find_RL_Slow(num.samp=30, dist="norm", params=list(mean=0, sd=1), tstat=wave.den, UCL=UCL)
     RLs[[length(RLs)+1]] <- RLs_det[[3]] # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
@@ -137,4 +154,26 @@ Old_TSO <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
     names(ts) <- namets
   }
   STAT
+}
+
+update_tau <- function(nvec, theta_p, theta_m, tstat, dist_ic, ...){
+  # Input:
+  # rlength: T, time
+  # nvec: new vector recieved at time T
+  # theta - 2 x (T-2) matrix containing old theta estimates
+  # output: matrix of updated parameters 
+  rlength <- length(theta_p) +1 
+  theta_p <- append(theta_p, 0)
+  theta_m <- append(theta_m, 0)
+  nvec_null <- tstat(nvec, dist_ic, ...)
+  #print(nvec_null)
+  theta_m[rlength] <- theta_m[(rlength-1)] + theta_p[(rlength-1)]
+  theta_p <- theta_p + nvec_null
+  return(cbind(theta_p,theta_m))
+}
+
+find_max_dif <- function(theta){
+  # NOT Absolute Values
+  h_t <- max(theta[,1]-theta[,2])
+  return(h_t)
 }
