@@ -93,21 +93,53 @@ Find_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
 }
 
 Find_RL_Fast <- function(num.samp, dist, params, tstat, UCL){
+  #TODO: Behavior of functions on initialization
   Proc <- NULL
   h_t <- 0
+  max_h_t <- 0
   theta_p <- NULL
   theta_m <- NULL
-  while(h_t < max(UCL)){
+  while(max_h_t < max(UCL)){
     Proc <- Sim_IC_Process_Iter(num.samp=num.samp, dist=dist, param=params, proc=Proc)
-    theta <- update_tau(nvec=Proc[,dim(Proc)[2]], theta_p=theta_p, theta_m=theta_m, tstat=tstat, dist_ic="pnorm")
+    theta <- update_tau(nvec=Proc[, dim(Proc)[2]], theta_p=theta_p, theta_m=theta_m, tstat=tstat, dist_ic="pnorm")
     theta_p <- theta[,1] 
     theta_m <- theta[,2]
     h_t <- append(h_t, find_max_dif(theta))
+    max_h_t <- max(h_t) #FIX LATER, DUMB
   }
   RL <- sapply(UCL, function(x) min(which(h_t >= x)))
   lenproc <- dim(Proc)[2]
   res <- list("h_t"=h_t, "Length of Process"=lenproc, "RL for Corresponding UCL"=RL, "UCLs"=UCL)
+  return(res)
 }
+
+update_tau <- function(nvec, theta_p, theta_m, tstat, dist_ic, ...){
+  # Input:
+  # rlength: T, time
+  # nvec: new vector recieved at time T
+  # theta_p tau+ estimates
+  # theta_m tau- estimates
+  # output: matrix of updated parameters 
+  rlength <- length(theta_p) +1 
+  theta_p <- append(theta_p, 0)
+  theta_m <- append(theta_m, 0)
+  nvec_null <- tstat(nvec, dist_ic, ...)
+  rdist_ic <- dist.conv.str(dist_ic, "r")
+  
+  if(rlength==1){
+    # Generate random sample from null distribution here, test against null
+    y <- get(rdist_ic, mode="function", envir=parent.frame())
+    rvec <- y(length(nvec), ...)
+    theta_m <- tstat(rvec, dist_ic, ...)
+    theta_p <- nvec_null
+    return(cbind(theta_p,theta_m))
+  }
+  #print(nvec_null)
+  theta_m[rlength] <- theta_m[(rlength-1)] + theta_p[(rlength-1)] # Will Break if T=1
+  theta_p <- theta_p + nvec_null
+  return(cbind(theta_p,theta_m))
+}
+
 
 # Temporary function
 ARL_Proc <- function(UCL){
@@ -156,21 +188,7 @@ Old_TSO <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   STAT
 }
 
-update_tau <- function(nvec, theta_p, theta_m, tstat, dist_ic, ...){
-  # Input:
-  # rlength: T, time
-  # nvec: new vector recieved at time T
-  # theta - 2 x (T-2) matrix containing old theta estimates
-  # output: matrix of updated parameters 
-  rlength <- length(theta_p) +1 
-  theta_p <- append(theta_p, 0)
-  theta_m <- append(theta_m, 0)
-  nvec_null <- tstat(nvec, dist_ic, ...)
-  #print(nvec_null)
-  theta_m[rlength] <- theta_m[(rlength-1)] + theta_p[(rlength-1)]
-  theta_p <- theta_p + nvec_null
-  return(cbind(theta_p,theta_m))
-}
+
 
 find_max_dif <- function(theta){
   # NOT Absolute Values
