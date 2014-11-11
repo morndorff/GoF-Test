@@ -20,6 +20,25 @@ Sim_IC_Process_Iter <- function(proc=NULL, num.samp, dist, params){
   proc <- cbind(proc, new_samp)
 }
 
+Sim_CP_Process_Iter <- function(proc=NULL, num.samp, cp, dist_one, param_one,
+                    dist_two, param_two){
+  if(is.null(proc)){
+    proc <- matrix(make_sample(num.samp, dist_one, param_one), nrow=num.samp, ncol=1)
+    return(proc)
+  }
+  lenproc <- dim(proc)[2]
+  if(lenproc < cp){
+    new_samp <- make_sample(num.samp, dist_one, param_one)
+    proc <- cbind(proc, new_samp)
+    return(proc)
+  }
+  if(lenproc >= cp){
+    new_samp <- make_sample(num.samp, dist_two, param_two)
+    proc <- cbind(proc, new_samp)
+    return(proc)
+  }
+}
+
 Sim_CP_Process <- function(num.samp,run.length,dist_one, param_one, 
                            dist_two, param_two, bpoint){
  samp_one <- (num.samp*bpoint)
@@ -71,7 +90,7 @@ Process_Stat <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   STAT
 }
 
-Find_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
+Find_IC_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
   # params - Incontrol distribution parameters
@@ -92,28 +111,91 @@ Find_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
   return(res)
 }
 
-Find_RL_Fast <- function(num.samp, dist, params, tstat, UCL){
-  #TODO: Behavior of functions on initialization
+Find_IC_RL_Fast <- function(num.samp, dist, params, tstat, UCL, detail=FALSE){
   Proc <- NULL
   h_t <- 0
-  max_h_t <- 0
-  theta_p <- NULL
-  theta_m <- NULL
-  while(max_h_t < max(UCL)){
-    Proc <- Sim_IC_Process_Iter(num.samp=num.samp, dist=dist, param=params, proc=Proc)
-    theta <- update_tau(nvec=Proc[, dim(Proc)[2]], theta_p=theta_p, theta_m=theta_m, tstat=tstat, dist_ic="pnorm")
-    theta_p <- theta[,1] 
-    theta_m <- theta[,2]
-    h_t <- append(h_t, find_max_dif(theta))
-    max_h_t <- max(h_t) #FIX LATER, DUMB
+  h_t_new <- 0
+  g_t_p <- NULL
+  g_t_m <- NULL
+  while(h_t_new < max(UCL)){
+    Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
+                                param=params) # New Realization @ Time T
+    Time <- dim(Proc)[2] # Can probably just be replaced by count var
+    g_t <- update_g_t(nvec=Proc[, Time], 
+                      theta_p = g_t_p, 
+                      theta_m = g_t_m, 
+                      tstat = tstat, 
+                      dist_ic = "pnorm") # get new estimates for g+ and g-
+    g_t_p <- g_t[, 1]
+    g_t_m <- g_t[, 2]
+    pos_scale <- seq(1/Time, 1, length.out=Time)
+    neg_scale <- rev(pos_scale)
+    h_g_p <- g_t_p * pos_scale
+    h_g_m <- g_t_m * neg_scale
+    h_t <- append(h_t, max(h_g_p - h_g_m))
+    #h_t <- append(h_t, find_max_dif(theta)) # New estimates for h(t)
+    h_t_new <- tail(h_t, 1) # For finding RLs
   }
-  RL <- sapply(UCL, function(x) min(which(h_t >= x)))
+  RL <- sapply(UCL, function(x) min(which(h_t >= x))) # Finding RLs to Corresponding UCL
   lenproc <- dim(Proc)[2]
+  if(detail){
+    res <- list("h_t"=h_t, 
+                "Length of Process"=lenproc, 
+                "RL for Corresponding UCL"=RL, 
+                "UCLs"=UCL,
+                "hgp"=h_g_p,
+                "hmp"=h_g_m)
+    return(res)
+  }
   res <- list("h_t"=h_t, "Length of Process"=lenproc, "RL for Corresponding UCL"=RL, "UCLs"=UCL)
   return(res)
 }
 
-update_tau <- function(nvec, theta_p, theta_m, tstat, dist_ic, ...){
+Find_CP_RL_Fast <- function(num.samp, dist_one, param_one,
+                            dist_two, param_two, cp,
+                            tstat, UCL, detail=FALSE){
+  Proc <- NULL
+  h_t <- 0
+  h_t_new <- 0
+  g_t_p <- NULL
+  g_t_m <- NULL
+  pdist_one <- paste("p", dist_one, sep="")
+  while(h_t_new < max(UCL)){
+    Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, dist_one=dist_one, param_one=param_one,
+                                dist_two=dist_two, param_two=param_two) # New Realization @ Time T
+    Time <- dim(Proc)[2] # Can probably just be replaced by count var
+    g_t <- update_g_t(nvec=Proc[, Time], 
+                      theta_p = g_t_p, 
+                      theta_m = g_t_m, 
+                      tstat = tstat, 
+                      dist_ic = pdist_one) # get new estimates for g+ and g-
+    g_t_p <- g_t[, 1]
+    g_t_m <- g_t[, 2]
+    pos_scale <- seq(1/Time, 1, length.out=Time)
+    neg_scale <- rev(pos_scale)
+    h_g_p <- g_t_p * pos_scale
+    h_g_m <- g_t_m * neg_scale
+    h_t <- append(h_t, max(h_g_p - h_g_m))
+    #h_t <- append(h_t, find_max_dif(theta)) # New estimates for h(t)
+    h_t_new <- tail(h_t, 1) # For finding RLs
+  }
+  RL <- sapply(UCL, function(x) min(which(h_t >= x))) # Finding RLs to Corresponding UCL
+  lenproc <- dim(Proc)[2]
+  if(detail){
+    res <- list("h_t"=h_t, 
+                "Length of Process"=lenproc, 
+                "RL for Corresponding UCL"=RL, 
+                "UCLs"=UCL,
+                "hgp"=h_g_p,
+                "hmp"=h_g_m)
+    return(res)
+  }
+  res <- list("h_t"=h_t, "Length of Process"=lenproc, "RL for Corresponding UCL"=RL, "UCLs"=UCL)
+  return(res)
+}
+
+update_g_t <- function(nvec, theta_p, theta_m, tstat, dist_ic, ...){
+  # Updates 'Fast' Algorithm for changepoint process
   # Input:
   # rlength: T, time
   # nvec: new vector recieved at time T
@@ -124,35 +206,43 @@ update_tau <- function(nvec, theta_p, theta_m, tstat, dist_ic, ...){
   theta_p <- append(theta_p, 0)
   theta_m <- append(theta_m, 0)
   nvec_null <- tstat(nvec, dist_ic, ...)
-  rdist_ic <- dist.conv.str(dist_ic, "r")
-  
   if(rlength==1){
+    # Special case when T=1
+    # TODO: Averaging
     # Generate random sample from null distribution here, test against null
+    rdist_ic <- dist.conv.str(dist_ic, "r") # Convert from pnorm to rnorm
     y <- get(rdist_ic, mode="function", envir=parent.frame())
     rvec <- y(length(nvec), ...)
     theta_m <- tstat(rvec, dist_ic, ...)
     theta_p <- nvec_null
     return(cbind(theta_p,theta_m))
   }
-  #print(nvec_null)
   theta_m[rlength] <- theta_m[(rlength-1)] + theta_p[(rlength-1)] # Will Break if T=1
   theta_p <- theta_p + nvec_null
   return(cbind(theta_p,theta_m))
 }
 
-
 # Temporary function
-ARL_Proc <- function(UCL){
+ARL_Proc <- function(UCL, method){
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
   e_time <- 0
-  while(e_time < 2*60*60){
-    RLs_det <- Find_RL_Slow(num.samp=30, dist="norm", params=list(mean=0, sd=1), tstat=wave.den, UCL=UCL)
+  len_UCL <- length(UCL)
+  while(e_time < 60){
+    RLs_det <- method(num.samp=30, dist="norm", params=list(mean=0, sd=1), tstat=wave.den, UCL=UCL)
     RLs[[length(RLs)+1]] <- RLs_det[[3]] # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
   }
-  return(list(RLs, e_time))
+  matRL <- matrix(unlist(RLs), ncol=3, byrow=TRUE)
+  
+  ARL <- matrix(,nrow=2, ncol=len_UCL)
+  ARL[1,] <- colMeans(matRL)
+  print(matRL)
+  ARL[2,] <- apply(matRL, 2, sd)
+  colnames(ARL) <- as.character(UCL)
+  rownames(ARL) <- c("mean", "sd")
+  return(list(ARL, RLs, e_time))
 }
 
 JKnife_Est <- function(data, tstat, ...){
@@ -187,8 +277,6 @@ Old_TSO <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   }
   STAT
 }
-
-
 
 find_max_dif <- function(theta){
   # NOT Absolute Values
