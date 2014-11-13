@@ -128,10 +128,10 @@ Find_IC_RL_Fast <- function(num.samp, dist, params, tstat, UCL, detail=FALSE){
                       dist_ic = "pnorm") # get new estimates for g+ and g-
     g_t_p <- g_t[, 1]
     g_t_m <- g_t[, 2]
-    #pos_scale <- seq(1/Time, 1, length.out=Time)
-    #neg_scale <- rev(pos_scale)
-    pos_scale <- rev(1 / 1:Time)
-    neg_scale <- 1 / 1:Time
+    pos_scale <- seq(1/Time, 1, length.out=Time)
+    neg_scale <- rev(pos_scale)
+    #pos_scale <- rev(1 / 1:Time)
+    #neg_scale <- 1 / 1:Time
     h_g_p <- g_t_p * pos_scale
     h_g_m <- g_t_m * neg_scale
     h_t <- append(h_t, max(h_g_p - h_g_m))
@@ -173,10 +173,10 @@ Find_CP_RL_Fast <- function(num.samp, dist_one, param_one,
                       dist_ic = pdist_one) # get new estimates for g+ and g-
     g_t_p <- g_t[, 1]
     g_t_m <- g_t[, 2]
-    #pos_scale <- seq(1/Time, 1, length.out=Time)
-    #neg_scale <- rev(pos_scale)
-    pos_scale <- rev(1 / 1:Time)
-    neg_scale <- 1 / 1:Time
+    pos_scale <- seq(1/Time, 1, length.out=Time)
+    neg_scale <- rev(pos_scale)
+    #pos_scale <- rev(1 / 1:Time)
+    #neg_scale <- 1 / 1:Time
     h_g_p <- g_t_p * pos_scale
     h_g_m <- g_t_m * neg_scale
     h_t <- append(h_t, max(h_g_p - h_g_m))
