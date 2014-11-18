@@ -6,7 +6,7 @@ Max_Quan_TS <- function(x, y, ..., interp = 4, do.plot = FALSE) {
   # Args: x: A vector of observations for a R.V. (must be numeric) 
   # y: Either (1) Another vector
   # of observations (two sample) 
-  # (2) A quantile function such as qnorm (one sample)
+  # (2) A quantile function such as qnorm -- must start with q (one sample)
   # interp: method of interpolation used. For more details, see ?quantile 
   # do.plot: Creates a plot illustrating the statistic 
   # Returns: The value of the statistic
