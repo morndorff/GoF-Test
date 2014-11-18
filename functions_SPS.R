@@ -90,7 +90,7 @@ Process_Stat <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   STAT
 }
 
-Find_IC_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
+Find_IC_RL_Slow <- function(num.samp=32, dist="norm", params, tstat=wave.energy, UCL){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
   # params - Incontrol distribution parameters
@@ -111,8 +111,15 @@ Find_IC_RL_Slow <- function(num.samp, dist, params, tstat, UCL){
   return(res)
 }
 
-Find_IC_RL_Fast <- function(num.samp, dist, params, tstat,
-                            UCL, detail=FALSE, weight=TRUE){
+Find_IC_RL_Fast <- function(num.samp=32, dist="norm", params, tstat=wave.energy,
+                            UCL, detail=FALSE, weight=FALSE){
+  # num.samp - numeric, # size of RS from each dist
+  # dist - Incontrol Distribution - prefer string
+  # params - Incontrol Distribution Parameters -- MUST BE LIST
+  # tstat - Test Statistic to use, i.e. ks.res.simp, wave.den
+  # UCL - vector of potential upper control limits -- max controls ends of loop
+  # detail - Gives more output
+  # weight - Weighting scheme used. Currently if weight=FALSE, then uses sample mean
   Proc <- NULL
   h_t <- 0
   h_t_new <- 0
@@ -130,7 +137,7 @@ Find_IC_RL_Fast <- function(num.samp, dist, params, tstat,
                       theta_m = g_t_m, 
                       tstat = tstat, 
                       dist_ic = dist_ic,
-                      param = params) # get new estimates for g+ and g-
+                      params = params) # get new estimates for g+ and g-
     g_t_p <- g_t[, 1]
     g_t_m <- g_t[, 2]
     # Scaling
@@ -166,9 +173,9 @@ Find_IC_RL_Fast <- function(num.samp, dist, params, tstat,
   return(res)
 }
 
-Find_CP_RL_Fast <- function(num.samp, dist_one, param_one,
-                            dist_two, param_two, cp,
-                            tstat, UCL, detail=FALSE, weight=TRUE){
+Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one,
+                            dist_two="norm", param_two, cp=50,
+                            tstat="wave.energy", UCL, detail=FALSE, weight=TRUE){
   Proc <- NULL
   h_t <- 0
   h_t_new <- 0
@@ -232,7 +239,8 @@ update_g_t <- function(nvec, theta_p, theta_m, tstat, dist_ic, params, ...){
   rlength <- length(theta_p) +1 
   theta_p <- append(theta_p, 0)
   theta_m <- append(theta_m, 0)# 
-  nvec_null <- tstat(nvec, dist_ic, ...)
+  nvec_null <- do.call(tstat, c(list(nvec), list(dist_ic), params))
+  #nvec_null <- tstat(nvec, dist_ic, ...)
   if(rlength==1){
     # Special case when T=1
     # TODO: Averaging
@@ -250,7 +258,7 @@ update_g_t <- function(nvec, theta_p, theta_m, tstat, dist_ic, params, ...){
 }
 
 # Temporary function
-ARL_Proc <- function(UCL, time, method, tstat, ...){
+ARL_Proc <- function(UCL, time=60, method=Find_IC_RL_Fast, tstat=wave.energy, ...){
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
   e_time <- 0
