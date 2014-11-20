@@ -23,6 +23,10 @@ Sim_IC_Process_Iter <- function(proc=NULL, num.samp, dist, params){
 Sim_CP_Process_Iter <- function(proc=NULL, num.samp, cp, dist_one, param_one,
                     dist_two, param_two){
   if(is.null(proc)){
+    if(cp==1){
+      proc <- matrix(make_sample(num.samp, dist_two, param_two), nrow=num.samp, ncol=1)
+      return(proc)     
+    }
     proc <- matrix(make_sample(num.samp, dist_one, param_one), nrow=num.samp, ncol=1)
     return(proc)
   }
@@ -111,7 +115,9 @@ Find_IC_RL_Slow <- function(num.samp=32, dist="norm", params, tstat=wave.energy,
   return(res)
 }
 
-Find_IC_RL_Fast <- function(num.samp=32, dist="norm", params, tstat=wave.energy,
+Find_IC_RL_Fast <- function(num.samp=32, 
+                            dist="norm", params=list(mean=0, sd=1), 
+                            tstat=wave.energy,
                             UCL, detail=FALSE, weight=FALSE){
   # num.samp - numeric, # size of RS from each dist
   # dist - Incontrol Distribution - prefer string
@@ -173,9 +179,9 @@ Find_IC_RL_Fast <- function(num.samp=32, dist="norm", params, tstat=wave.energy,
   return(res)
 }
 
-Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one,
-                            dist_two="norm", param_two, cp=50,
-                            tstat="wave.energy", UCL, detail=FALSE, weight=TRUE){
+Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
+                            dist_two="norm", param_two=list(mean=0, sd=2), cp=1,
+                            tstat=wave.energy, UCL, detail=FALSE, weight=TRUE){
   Proc <- NULL
   h_t <- 0
   h_t_new <- 0
@@ -192,7 +198,8 @@ Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one,
                       theta_p = g_t_p, 
                       theta_m = g_t_m, 
                       tstat = tstat, 
-                      dist_ic = pdist_one) # get new estimates for g+ and g-
+                      dist_ic = pdist_one,
+                      params=param_one) # get new estimates for g+ and g-
     g_t_p <- g_t[, 1]
     g_t_m <- g_t[, 2]
     if(weight==TRUE){
@@ -258,14 +265,24 @@ update_g_t <- function(nvec, theta_p, theta_m, tstat, dist_ic, params, ...){
 }
 
 # Temporary function
-ARL_Proc <- function(UCL, time=60, method=Find_IC_RL_Fast, tstat=wave.energy, ...){
+ARL_Proc <- function(UCL, num.samp = 30,
+                     time=60, 
+                     method=Find_IC_RL_Fast, 
+                     tstat=wave.energy,
+                     dist="norm",
+                     params=list(mean=0, sd=1), 
+                     ...){
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
   e_time <- 0
   len_UCL <- length(UCL)
   # Calculating ARLs
   while(e_time < time){
-    RLs_det <- method(num.samp=30, dist="norm", params=list(mean=0, sd=1), tstat=tstat, UCL=UCL, ...)
+    RLs_det <- method(num.samp=num.samp, 
+                      dist=dist, 
+                      params=params,
+                      tstat=tstat, 
+                      UCL=UCL, ...)
     RLs[[length(RLs)+1]] <- RLs_det[[3]] # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
@@ -280,6 +297,35 @@ ARL_Proc <- function(UCL, time=60, method=Find_IC_RL_Fast, tstat=wave.energy, ..
   print(ARL)
   return(list(ARL, RLs, e_time))
 }
+
+Find_ARL_OOC <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
+                         dist_two="norm", param_two=list(mean=0, sd=2), cp=1,
+                         tstat=wave.energy, UCL, time = 30, method=Find_CP_RL_Fast, ...){
+  ptm <- proc.time()
+  RLs <- vector(mode="list", length=0)
+  e_time <- 0
+  len_UCL <- length(UCL)
+  # Calculating ARLs
+  while(e_time < time){
+    RLs_det <- method(num.samp=num.samp, 
+                      dist_one=dist_one, param_one=param_one,
+                      dist_two=dist_two, param_two=param_two,
+                      tstat=tstat, UCL=UCL, cp=cp, ...)
+    RLs[[length(RLs)+1]] <- RLs_det[[3]] # Append list of RL's
+    howlong <- proc.time()-ptm
+    e_time <- howlong["elapsed"]
+  }
+  
+  matRL <- matrix(unlist(RLs), ncol=len_UCL, byrow=TRUE)# Making ARL Matrix
+  ARL <- matrix(,nrow=2, ncol=len_UCL) 
+  ARL[1,] <- colMeans(matRL)
+  ARL[2,] <- apply(matRL, 2, sd)
+  colnames(ARL) <- as.character(round(UCL,3))
+  rownames(ARL) <- c("mean", "sd")
+  print(ARL)
+  return(list(ARL, RLs, e_time))
+}
+
 
 JKnife_Est <- function(data, tstat, ...){
   jack.est <- vector(mode="numeric", length=length(data))
