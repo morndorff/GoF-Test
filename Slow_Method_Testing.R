@@ -17,9 +17,9 @@ Plots <- function (test, weight="Biased") {
 #############################################################
 ######### CURVE STUFF
 # Finding ARLs for energy.curve method
-UCL <- seq(.01,.07, length.out=10)
-ARL_Curve_SA <- ARL_Proc(UCL=UCL, time=120, 
-                         method=Find_IC_RL_Fast, 
+UCL <- seq(.01,.3, length.out=10)
+ARL_Curve_SA <- ARL_Proc(UCL=UCL, time=5, 
+                         method=Find_IC_RL_Slow, 
                          tstat=wave.energy, 
                          dist="norm",
                          params=list(mean=0, sd=1))

@@ -105,7 +105,8 @@ Find_IC_RL_Slow <- function(num.samp=32, dist="norm", params, tstat=wave.energy,
   track_stat <- NULL
   tstat_proc <- 0
   while(tstat_proc < max(UCL)){
-    Proc <- Sim_IC_Process_Iter(num.samp=num.samp, dist="norm", param=list(mean=0, sd=1), proc=Proc)
+    Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
+                                param=params)
     tstat_proc <- Process_Stat(proc=Proc, tstat=wave.den, dist_ic="pnorm", mean=0, sd=1)
     track_stat <- append(track_stat, tstat_proc)
     count <- count +1
@@ -191,7 +192,8 @@ Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one=list(mean=0,
   which_tau_weight <- NULL
   pdist_one <- paste("p", dist_one, sep="")
   while(h_t_new < max(UCL)){
-    Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, dist_one=dist_one, param_one=param_one,
+    Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
+                                dist_one=dist_one, param_one=param_one,
                                 dist_two=dist_two, param_two=param_two) # New Realization @ Time T
     Time <- dim(Proc)[2] # Can probably just be replaced by count var
     g_t <- update_g_t(nvec=Proc[, Time], 
