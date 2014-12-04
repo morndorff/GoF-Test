@@ -39,7 +39,8 @@ funtochar <- function(x) {
 }
 
 make_sample <- function(n, dist, params) {
-    # Args: dist: 'norm', 'unif', etc. 
+    # Args: 
+    # dist: 'norm', 'unif', etc. 
     # n: sample size 
     # params: list(min=0,max=2) 
     # Ex: sam <- make_sample(n=100,dist=unif,params=list(min=0,max=2)) 

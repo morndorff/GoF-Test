@@ -22,22 +22,26 @@ Sim_IC_Process_Iter <- function(proc=NULL, num.samp, dist, params){
 
 Sim_CP_Process_Iter <- function(proc=NULL, num.samp, cp, dist_one, param_one,
                     dist_two, param_two){
+  # Args:
+  # dist_one: "norm" "unif"
+  # param_one: list(mean=0, sd=1)
+  # cp: When does the distribution change.  If it is one, it does so immediately
   if(is.null(proc)){
     if(cp==1){
-      proc <- matrix(make_sample(num.samp, dist_two, param_two), nrow=num.samp, ncol=1)
+      proc <- matrix(make_sample(n=num.samp, dist=dist_two, params=param_two), nrow=num.samp, ncol=1)
       return(proc)     
     }
-    proc <- matrix(make_sample(num.samp, dist_one, param_one), nrow=num.samp, ncol=1)
+    proc <- matrix(make_sample(n=num.samp, dist=dist_one, params=param_one), nrow=num.samp, ncol=1)
     return(proc)
   }
   lenproc <- dim(proc)[2]
   if(lenproc < cp){
-    new_samp <- make_sample(num.samp, dist_one, param_one)
+    new_samp <- make_sample(n=num.samp, dist=dist_one, params=param_one)
     proc <- cbind(proc, new_samp)
     return(proc)
   }
   if(lenproc >= cp){
-    new_samp <- make_sample(num.samp, dist_two, param_two)
+    new_samp <- make_sample(n=num.samp, dist=dist_two, params=param_two)
     proc <- cbind(proc, new_samp)
     return(proc)
   }
@@ -56,32 +60,38 @@ Sim_CP_Process <- function(num.samp,run.length,dist_one, param_one,
  return(CP_Proc)
 }
 
-Process_Stat <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
+Process_Stat <- function(proc, tstat, dist_ic, params, doplot=FALSE, detail=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
   # proc: A matrix containing the process
-  # stat: A two-sample test statistic
+  # tstat: A test statistic
+  # dist_ic: The incontrol distribution - for wavelet and ks, should be "pnorm" or similar
+  # params: parameters of the in control distribution
   lenproc <- dim(proc)[2] # run length of the process
+  
+  # If the proc is initially a vector, its dim value will be 0, so we do this
   if(is.null(lenproc)) {
     ts <- NULL
     ts[1] <- 0
-    ts[2] <- tstat(proc, dist_ic, ...)
+    ts[2] <- do.call(tstat, c(list(proc), list(dist_ic), params))
+    #ts[2] <- tstat(proc, dist_ic, ...)
     ts[3] <- ts[2]
     STAT <- ts[3]
     return(STAT)
-  }# if process length is 1, this is needed
+  }
   
   ts <- matrix(nrow=3,ncol=lenproc)
   tau <- 0
   ts[1, (tau + 1)] <- 0
-  ts[2, (tau + 1)] <- tstat(proc[, (tau+1):lenproc], dist_ic, ...)
+  ts[2, (tau + 1)] <- do.call(tstat, c(list(proc[, (tau+1):lenproc]), list(dist_ic), params))
+  # ts[2, (tau + 1)] <- tstat(proc[, (tau+1):lenproc], dist_ic, ...)
   ts[3, (tau + 1)] <- ts[2, (tau+1)] - ts[1, (tau+1)]
   if(lenproc!=1) {
   for(tau in 1:(lenproc-1)){
-    ts[1, (tau+1)] <- tstat(proc[, 1:tau], dist_ic, ...) #g(H0, tau-)
-    
-    ts[2, (tau+1)] <- tstat(proc[, (tau+1):lenproc], dist_ic, ...) #g(H0, tau+)
-    
+    ts[1, (tau+1)] <- do.call(tstat, c(list(proc[, 1:tau]), list(dist_ic), params)) #g(H0, tau-)
+    #ts[1, (tau+1)] <- tstat(proc[, 1:tau], dist_ic, ...) #g(H0, tau-)
+    ts[2, (tau+1)] <- do.call(tstat, c(list(proc[, (tau+1):lenproc]), list(dist_ic), params)) #g(H0, tau+)
+    #ts[2, (tau+1)] <- tstat(proc[, (tau+1):lenproc], dist_ic, ...) #g(H0, tau+)
     ts[3, (tau+1)] <- ts[2, (tau+1)] - ts[1, (tau+1)] #g(H0, tau+) - g(H0, tau-)
   }
   }
@@ -94,7 +104,9 @@ Process_Stat <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
   STAT
 }
 
-Find_IC_RL_Slow <- function(num.samp=32, dist="norm", params, tstat=wave.energy, UCL){
+Find_IC_RL_Slow <- function(num.samp=32, 
+                            dist="norm", params=list(mean=0, sd=1), 
+                            tstat=wave.energy, UCL){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
   # params - Incontrol distribution parameters
@@ -104,10 +116,39 @@ Find_IC_RL_Slow <- function(num.samp=32, dist="norm", params, tstat=wave.energy,
   count <- 1
   track_stat <- NULL
   tstat_proc <- 0
+  dist_ic <- paste("p", dist, sep="")
   while(tstat_proc < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
-                                param=params)
-    tstat_proc <- Process_Stat(proc=Proc, tstat=wave.den, dist_ic="pnorm", mean=0, sd=1)
+                                param=params) # good
+    tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
+                               dist_ic=dist_ic, params=params)
+    track_stat <- append(track_stat, tstat_proc)
+    count <- count +1
+  }
+  RL <- sapply(UCL, function(x) min(which(track_stat >= x)))
+  res <- list("h(t)"=track_stat, "Length of Process"=count, "RL for Corresponding UCL"=RL, "UCLS"=UCL)
+  return(res)
+}
+
+Find_CP_RL_Slow <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
+                            dist_two="norm", param_two=list(mean=0, sd=2), cp=1,
+                            tstat=wave.energy, UCL){
+  # num.samp - Number of Samples
+  # dist - Incontrol distribution
+  # params - Incontrol distribution parameters
+  # tstat - Test Statistic for the process
+  # UCL - Vector containing Upper Control Limits
+  Proc <- NULL # Initializing
+  count <- 1
+  track_stat <- NULL
+  tstat_proc <- 0
+  dist_ic <- paste("p", dist_one, sep="")
+  while(tstat_proc < max(UCL)){
+    Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
+                                dist_one=dist_one, param_one=param_one,
+                                dist_two=dist_two, param_two=param_two)# good
+    tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
+                               dist_ic=dist_ic, params=param_one)
     track_stat <- append(track_stat, tstat_proc)
     count <- count +1
   }

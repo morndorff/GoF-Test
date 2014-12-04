@@ -17,8 +17,8 @@ Plots <- function (test, weight="Biased") {
 #############################################################
 ######### CURVE STUFF
 # Finding ARLs for energy.curve method
-UCL <- seq(.01,.3, length.out=10)
-ARL_Curve_SA <- ARL_Proc(UCL=UCL, time=5, 
+UCL <- seq(.01,.06, length.out=10)
+ARL_Curve_SA <- ARL_Proc(UCL=UCL, time=10, 
                          method=Find_IC_RL_Slow, 
                          tstat=wave.energy, 
                          dist="norm",
@@ -26,26 +26,27 @@ ARL_Curve_SA <- ARL_Proc(UCL=UCL, time=5,
 ARL_Curve_SA_Mat <- ARL_Curve_SA[[1]] # Sample Average ARL
 ARL <- as.numeric(ARL_Curve_SA_Mat[1,])
 f <- approxfun(ARL,UCL)
-UCL_SA_200_Curve <- f(200)
+UCL_SA_200_Curve_Slow <- f(200)
+
 
 ####### Plotting some Sample Paths
 set.seed(5)
-test <- Find_IC_RL_Fast(num.samp=32, dist="norm", 
-                        params=list(mean=30, sd=2), 
+test <- Find_IC_RL_Slow(num.samp=32, dist="norm", 
+                        params=list(mean=0, sd=1), 
                         tstat=wave.energy, 
-                        UCL=UCL_SA_200_Curve,
-                        detail=TRUE, weight=FALSE)
-jpeg('ENCURVEIC.jpg')
-plot(test[[1]], main=paste("Plot of Test Statistic h(t), IC N01"), , type="l")
+                        UCL=.07)
+###########CHANGE UCL AFTER SIMULATION!!!!
+
+
+jpeg('ENCURVEIC_Slow2.jpg')
+plot(test[[1]], main=paste("Plot of Test Statistic h(t), Slow Method IC N01"), , type="l")
 dev.off()
 
-test <- Find_CP_RL_Fast(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
+test <- Find_CP_RL_Slow(num.samp=64, dist_one="norm", param_one=list(mean=0, sd=1),
                         dist_two = "norm", param_two = list(mean=0, sd=2),
-                        tstat=wave.energy, 
-                        UCL=UCL_SA_200_Curve, cp=1,
-                        detail=TRUE, weight=FALSE)
-jpeg('ENCURVEOOC.jpg')
-plot(test[[1]], main=paste("Plot of Test Statistic h(t) IC N01, OOCN02"), type="l")
+                        tstat=wave.energy, UCL=.065, cp=1)
+jpeg('ENCURVEOOC_Slow.jpg')
+plot(test[[1]], main=paste("Plot of Test Statistic h(t) Slow Method IC N01, OOCN02 CP1=1"), type="l")
 dev.off()
 #########
 
