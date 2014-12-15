@@ -9,7 +9,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
   F.y <- ecdf(y)
   ml <- min(length(x),length(y)) 
   n <- 2^floor(log2(ml))
-  z <- seq(range(x, y)[1], range(x, y)[2], length=n)
+  z <- seq(range(x, y)[1], range(x, y)[2], length.out=n)
   F.dwt <- dwt(F.x(z) - F.y(z), wf=wf, n.levels=log(n, 2))
   } else{
     # One Sample
@@ -28,7 +28,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
     z <- seq(min(x),max(x),length=n)
     F.dwt <- dwt(F.x(z) - y(z,...), wf=wf, n.levels=log(n,2))
   }
-  
+  return(F.dwt)
   
   oc <- unlist(F.dwt)
   oc <- max(abs(oc))
@@ -56,7 +56,7 @@ wave.energy <- function (x, y, ...,
                          opt="max", 
                          wf="haar",
                          square=FALSE,
-                         norm=TRUE) 
+                         norm=TRUE)
 {
   # Args:
   # y must be numeric of a "p" distribution function
@@ -107,23 +107,22 @@ wave.energy <- function (x, y, ...,
 
   xx <- cumsum(x.dwt)
   yy <- cumsum(y.dwt)
+  max_x <- tail(xx, 1)
+  max_y <- tail(yy, 1)
   # return(max(yy))
   if(norm==FALSE){
-    if(max(xx) > max(yy)){
-      xx <- xx / max(xx)
-      yy <- yy / max(xx)
+    if(max_x > max_y){
+      xx <- xx / max_x
+      yy <- yy / max_x
     } else{
-      xx <- xx / max(yy)
-      yy <- yy / max(yy)
+      xx <- xx / max_y
+      yy <- yy / max_y
     }
   }
   if(norm==TRUE){  
-  xx <- xx / max(xx)
-  yy <- yy / max(yy)
+  xx <- xx / max_x
+  yy <- yy / max_y
   }
-  
-  
-  
   if(doplot){
     plot(xx, type="l", ylim=range(xx, yy, xx - yy))
     lines(yy, col=2)
