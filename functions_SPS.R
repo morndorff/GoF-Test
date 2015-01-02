@@ -60,48 +60,50 @@ Sim_CP_Process <- function(num.samp,run.length,dist_one, param_one,
  return(CP_Proc)
 }
 
-Process_Stat <- function(proc, tstat, dist_ic, params, doplot=FALSE, detail=FALSE){
+Process_Stat <- function(proc, tau_minus, tstat, dist_ic, params, doplot=FALSE, detail=FALSE){
   # Tracks the value of a statistic for a process
   # Inputs:
   # proc: A matrix containing the process
+  # tau_minus: A vector containing g(tau-,H0) (Should be of length tau-1)
   # tstat: A test statistic
   # dist_ic: The incontrol distribution - for wavelet and ks, should be "pnorm" or similar
   # params: parameters of the in control distribution
   lenproc <- dim(proc)[2] # run length of the process
-  
+  num.samp <- dim(proc)[1]
   # If the proc is initially a vector, its dim value will be 0, so we do this
-  if(is.null(lenproc)) {
+  if(lenproc==1){
     ts <- NULL
-    ts[1] <- 0
+
+    # ts[1] <- 0
+    rdist_ic <- dist.conv.str(dist_ic, "r") # Convert from pnorm to rnorm
+    y <- get(rdist_ic, mode="function", envir=parent.frame())
+    rvec <- do.call(y, c(list(num.samp), params))
+    ts[1] <- do.call(tstat, c(list(rvec), list(dist_ic), params))
     ts[2] <- do.call(tstat, c(list(proc), list(dist_ic), params))
     #ts[2] <- tstat(proc, dist_ic, ...)
-    ts[3] <- ts[2]
+    ts[3] <- ts[2]-ts[1]
     STAT <- ts[3]
-    return(STAT)
+    tau_minus <- ts[1]
+    return(list("Test Statistic"=STAT, "Tau Minus"=tau_minus))
   }
-  
   ts <- matrix(nrow=3,ncol=lenproc)
-  tau <- 0
-  ts[1, (tau + 1)] <- 0
-  ts[2, (tau + 1)] <- do.call(tstat, c(list(proc[, (tau+1):lenproc]), list(dist_ic), params))
-  # ts[2, (tau + 1)] <- tstat(proc[, (tau+1):lenproc], dist_ic, ...)
-  ts[3, (tau + 1)] <- ts[2, (tau+1)] - ts[1, (tau+1)]
+  # Handling g(tau-, H0)
+  ts[1, 1:(lenproc-1)] <- tau_minus
+  ts[1, lenproc] <- do.call(tstat, c(list(proc[,1:lenproc]), list(dist_ic), params))
+  
   if(lenproc!=1) {
-  for(tau in 1:(lenproc-1)){
-    ts[1, (tau+1)] <- do.call(tstat, c(list(proc[, 1:tau]), list(dist_ic), params)) #g(H0, tau-)
-    #ts[1, (tau+1)] <- tstat(proc[, 1:tau], dist_ic, ...) #g(H0, tau-)
+  for(tau in 0:(lenproc-1)){
     ts[2, (tau+1)] <- do.call(tstat, c(list(proc[, (tau+1):lenproc]), list(dist_ic), params)) #g(H0, tau+)
-    #ts[2, (tau+1)] <- tstat(proc[, (tau+1):lenproc], dist_ic, ...) #g(H0, tau+)
-    ts[3, (tau+1)] <- ts[2, (tau+1)] - ts[1, (tau+1)] #g(H0, tau+) - g(H0, tau-)
   }
+  ts[3, ] <- ts[2, ] - ts[1, ] # Take difference
   }
   STAT <- max(ts[3,])
-  
+  tau_minus <- ts[1,]
   if(detail){
-    deta <- list("Statistic"=STAT,"All Stats"=ts)
+    deta <- list("Statistic"=STAT,"All Stats"=ts, "Tau Minus"=tau_minus)
     return(deta)
   }
-  STAT
+  return(list("Test Statistic"=STAT, "Tau Minus"=tau_minus))
 }
 
 Find_IC_RL_Slow <- function(num.samp=32, 
@@ -117,11 +119,15 @@ Find_IC_RL_Slow <- function(num.samp=32,
   track_stat <- NULL
   tstat_proc <- 0
   dist_ic <- paste("p", dist, sep="")
+  tau_minus <- NULL
   while(tstat_proc < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
                                 param=params) # good
+
     tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
-                               dist_ic=dist_ic, params=params)
+                               dist_ic=dist_ic, params=params, tau_minus=tau_minus)
+    tau_minus <- tstat_proc[[2]]
+    tstat_proc <- tstat_proc[[1]]
     track_stat <- append(track_stat, tstat_proc)
     count <- count +1
   }
