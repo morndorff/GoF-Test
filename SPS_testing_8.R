@@ -2,6 +2,7 @@
 
 # Unequal Sample Sizes Assessment
 # rm(list=ls())
+library(waveslim)
 source("functions.R")
 set.seed(50)
 
@@ -17,3 +18,5 @@ for(i in 1:Reps){
 
 AvgVals <- colMeans(Results)
 WDif <- plot(AvgVals, main="Average Values for Wavelet Difference Test")
+
+save.image(
