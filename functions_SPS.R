@@ -333,7 +333,6 @@ ARL_Proc <- function(UCL, num.samp = 30,
                       tstat=tstat, 
                       UCL=UCL, ...)
     RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]]
-    print(RLs_det[["RL for Corresponding UCL"]]) # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
   }
