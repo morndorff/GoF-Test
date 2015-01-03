@@ -332,7 +332,8 @@ ARL_Proc <- function(UCL, num.samp = 30,
                       params=params,
                       tstat=tstat, 
                       UCL=UCL, ...)
-    RLs[[length(RLs)+1]] <- RLs_det[[3]] # Append list of RL's
+    RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]]
+    print(RLs_det[["RL for Corresponding UCL"]]) # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
   }
@@ -360,7 +361,7 @@ Find_ARL_OOC <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd
                       dist_one=dist_one, param_one=param_one,
                       dist_two=dist_two, param_two=param_two,
                       tstat=tstat, UCL=UCL, cp=cp, ...)
-    RLs[[length(RLs)+1]] <- RLs_det[[3]] # Append list of RL's
+    RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]] # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
   }
