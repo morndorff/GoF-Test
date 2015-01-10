@@ -203,3 +203,69 @@ wave.den.power <- function (n=2^5, p=500, doplot=F, m=100, doplot1=F)
   }
   c(oc=mean(power.vec[, 1]), ks=mean(power.vec[, 2]), frac=mean(power.vec[, 1]) / mean(power.vec[, 2]))
 }
+
+wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar")
+{
+  library(wavethresh)
+  library(waveslim)
+  x <- sort(x)
+  lenx <- length(x)
+  # Two Sample Test
+  if (is.numeric(y)) {
+    leny <- length(y)
+    y <- sort(y)
+
+    num_quan <- min(2^floor(log(lenx,2)), 2^floor(log(leny,2)))
+    prob <- seq((1-.5)/num_quan, (num_quan-.5)/num_quan, length.out=num_quan)
+
+    # Because # of quantiles is < data points, need to interpolate
+    qx <- quantile(x, probs = prob, type = interp)
+    qy <- quantile(y, probs = prob, type = interp)
+    q_inter_x <- approxfun(prob, qx, yleft = min(qx), yright = max(qx))
+    q_inter_y <- approxfun(prob, qy, yleft = min(qy), yright = max(qy))
+    quan_dif <- q_inter_y(prob) - q_inter_x(prob)
+    
+    n <- length(quan_dif)
+    wave_tran <- wd(quan_dif, family="DaubExPhase", filter.number=1) #haar wavelet
+    scoef <- sort(abs(wave_tran$D), decreasing=TRUE)
+    sum_coef <- sum(abs(scoef))
+    num_coef <- min(which(cumsum(abs(scoef))/sum_coef>.9))
+    wave_th <- threshold(wave_tran, mannum= num_coef)
+    STAT <- sum(wave_th$D^2)
+    return(STAT)
+  }
+  
+  # One Sample
+  if (is.list(y)) 
+    y <- names(y)
+  if (is.function(y)) 
+    funname <- as.character(substitute(y))
+  if (is.character(y)) 
+    funname <- y
+  y <- get(funname, mode = "function", envir = parent.frame())
+  if (!is.function(y)) 
+    stop("'y' must be numeric or a function or a string naming a valid function")
+  # Assuring diadic lengths
+  #nx_p2 <- 2^floor(log(lenx,2))
+  
+  num_quan <- 2^floor(log(lenx,2))
+  prob <- seq((1-.5)/num_quan, (num_quan-.5)/num_quan, length.out=num_quan)
+  
+  
+  # Estimated Quantiles:
+  qx <- quantile(x, probs = prob, type = interp)
+  q_inter_x <- approxfun(prob, qx, yleft = min(qx), yright = max(qx))
+  x_quans <- q_inter_x(prob)
+  # True Quantiles
+  true_quan <- y(prob, ...)
+  
+  quan_dif <- x_quans - true_quan
+  n <- length(quan_dif)
+  wave_tran <- wd(quan_dif, family="DaubExPhase", filter.number=1) #haar wavelet
+  scoef <- sort(abs(wave_tran$D), decreasing=TRUE)
+  sum_coef <- sum(abs(scoef))
+  num_coef <- min(which(cumsum(abs(scoef))/sum_coef>.9))
+  wave_th <- threshold(wave_tran, mannum= num_coef)
+  STAT <- sum(wave_th$D^2)
+  return(STAT)
+}

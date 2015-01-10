@@ -514,3 +514,42 @@ Process_Stat_W <- function(proc, tau_minus, tstat,
   }
   STAT
 }
+
+Find_CP_RL_Windowed<- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
+                               dist_two="norm", param_two=list(mean=0, sd=2), cp=10,
+                               tstat=wave.energy, UCL, WSize=15, throw=TRUE){
+  # num.samp - Number of Samples
+  # dist - Incontrol distribution
+  # params - Incontrol distribution parameters
+  # tstat - Test Statistic for the process
+  # UCL - Vector containing Upper Control Limits
+  Proc <- NULL # Initializing
+  count <- 1
+  track_stat <- NULL
+  tstat_proc <- 0
+  dist_ic <- paste("p", dist_one, sep="")
+  while(tstat_proc < max(UCL)){
+    Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
+                                dist_one=dist_one, param_one=param_one,
+                                dist_two=dist_two, param_two=param_two)# good
+    lenproc <- dim(Proc)[2]
+    # If W >= to T, call original function
+    if(WSize >= lenproc){
+      tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
+                                 dist_ic=dist_ic, params=param_one, tau_minus=tau_minus)
+      tau_minus <- tstat_proc[[2]]
+      tstat_proc <- tstat_proc[[1]]
+      track_stat <- append(track_stat, tstat_proc)
+      count <- count +1
+    } else { # If W > T, calculate using Windowed Version
+      tstat_proc <- Process_Stat_W(proc=Proc, tstat=tstat, 
+                                   dist_ic=dist_ic, params=param_one, 
+                                   WSize=WSize, throw=throw)
+      track_stat <- append(track_stat, tstat_proc)
+      count <- count +1
+    }
+  }
+  RL <- sapply(UCL, function(x) min(which(track_stat >= x)))
+  res <- list("h(t)"=track_stat, "Length of Process"=count, "RL for Corresponding UCL"=RL, "UCLS"=UCL, "Proc"=Proc)
+  return(res)
+}
