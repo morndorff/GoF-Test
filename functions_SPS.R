@@ -73,14 +73,11 @@ Process_Stat <- function(proc, tau_minus, tstat, dist_ic, params, doplot=FALSE, 
   # If the proc is initially a vector, its dim value will be 0, so we do this
   if(lenproc==1){
     ts <- NULL
-
-    # ts[1] <- 0
-    rdist_ic <- dist.conv.str(dist_ic, "r") # Convert from pnorm to rnorm
+    rdist_ic <- dist.conv.str(dist_ic, "r") # strip first letter off string and replace with "r"
     y <- get(rdist_ic, mode="function", envir=parent.frame())
     rvec <- do.call(y, c(list(num.samp), params))
     ts[1] <- do.call(tstat, c(list(rvec), list(dist_ic), params))
     ts[2] <- do.call(tstat, c(list(proc), list(dist_ic), params))
-    #ts[2] <- tstat(proc, dist_ic, ...)
     ts[3] <- ts[2]-ts[1]
     STAT <- ts[3]
     tau_minus <- ts[1]
@@ -107,7 +104,7 @@ Process_Stat <- function(proc, tau_minus, tstat, dist_ic, params, doplot=FALSE, 
 }
 
 Find_IC_RL_Slow <- function(num.samp=32, 
-                            dist="norm", params=list(mean=0, sd=1), 
+                            dist="pnorm", params=list(mean=0, sd=1), 
                             tstat=wave.energy, UCL){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
@@ -118,7 +115,8 @@ Find_IC_RL_Slow <- function(num.samp=32,
   count <- 1
   track_stat <- NULL
   tstat_proc <- 0
-  dist_ic <- paste("p", dist, sep="")
+  dist_ic <- dist
+  dist <- substring(dist,first=2)
   tau_minus <- NULL
   while(tstat_proc < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
@@ -136,8 +134,8 @@ Find_IC_RL_Slow <- function(num.samp=32,
   return(res)
 }
 
-Find_CP_RL_Slow <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
-                            dist_two="norm", param_two=list(mean=0, sd=2), cp=1,
+Find_CP_RL_Slow <- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0, sd=1),
+                            dist_two="pnorm", param_two=list(mean=0, sd=2), cp=1,
                             tstat=wave.energy, UCL){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
@@ -148,7 +146,9 @@ Find_CP_RL_Slow <- function(num.samp=32, dist_one="norm", param_one=list(mean=0,
   count <- 1
   track_stat <- NULL
   tstat_proc <- 0
-  dist_ic <- paste("p", dist_one, sep="")
+  dist_ic <- dist_one
+  dist_one <- substring(dist_one, first=2)
+  dist_two <- substring(dist_two, first=2)  
   while(tstat_proc < max(UCL)){
     Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
                                 dist_one=dist_one, param_one=param_one,
@@ -164,7 +164,7 @@ Find_CP_RL_Slow <- function(num.samp=32, dist_one="norm", param_one=list(mean=0,
 }
 
 Find_IC_RL_Fast <- function(num.samp=32, 
-                            dist="norm", params=list(mean=0, sd=1), 
+                            dist="pnorm", params=list(mean=0, sd=1), 
                             tstat=wave.energy,
                             UCL, detail=FALSE, weight=FALSE){
   # num.samp - numeric, # size of RS from each dist
@@ -181,7 +181,8 @@ Find_IC_RL_Fast <- function(num.samp=32,
   g_t_m <- NULL
   which_tau <- NULL
   which_tau_weight <- NULL
-  dist_ic <- paste("p", dist, sep="")
+  dist_ic <- dist
+  dist <- substring(dist,first=2)
   while(h_t_new < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
                                 param=params) # New Realization @ Time T
@@ -227,8 +228,8 @@ Find_IC_RL_Fast <- function(num.samp=32,
   return(res)
 }
 
-Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
-                            dist_two="norm", param_two=list(mean=0, sd=2), cp=1,
+Find_CP_RL_Fast <- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0, sd=1),
+                            dist_two="pnorm", param_two=list(mean=0, sd=2), cp=1,
                             tstat=wave.energy, UCL, detail=FALSE, weight=TRUE){
   Proc <- NULL
   h_t <- 0
@@ -237,7 +238,9 @@ Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one=list(mean=0,
   g_t_m <- NULL
   which_tau <- NULL
   which_tau_weight <- NULL
-  pdist_one <- paste("p", dist_one, sep="")
+  dist_ic <- dist_one
+  dist_one <- substring(dist_one, first=2)
+  dist_two <- substring(dist_two, first=2)  
   while(h_t_new < max(UCL)){
     Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
                                 dist_one=dist_one, param_one=param_one,
@@ -247,7 +250,7 @@ Find_CP_RL_Fast <- function(num.samp=32, dist_one="norm", param_one=list(mean=0,
                       theta_p = g_t_p, 
                       theta_m = g_t_m, 
                       tstat = tstat, 
-                      dist_ic = pdist_one,
+                      dist_ic = dist_ic,
                       params=param_one) # get new estimates for g+ and g-
     g_t_p <- g_t[, 1]
     g_t_m <- g_t[, 2]
@@ -301,7 +304,7 @@ update_g_t <- function(nvec, theta_p, theta_m, tstat, dist_ic, params, ...){
     # Special case when T=1
     # TODO: Averaging
     # Generate random sample from null distribution here, test against null
-    rdist_ic <- dist.conv.str(dist_ic, "r") # Convert from pnorm to rnorm
+    rdist_ic <- dist.conv.str(dist_ic, "r") # Convert from pnorm/qnorm to rnorm
     y <- get(rdist_ic, mode="function", envir=parent.frame())
     rvec <- y(length(nvec), ...)
     theta_m <- tstat(rvec, dist_ic, ...)
@@ -324,6 +327,7 @@ ARL_Proc <- function(UCL, num.samp = 30,
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
   e_time <- 0
+  count <- 0
   len_UCL <- length(UCL)
   # Calculating ARLs
   while(e_time < time){
@@ -335,6 +339,8 @@ ARL_Proc <- function(UCL, num.samp = 30,
     RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]]
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
+    count <- count +1
+    print(paste("Iteration ",count, ", Total Time: ",e_time))
   }
   
   matRL <- matrix(unlist(RLs), ncol=len_UCL, byrow=TRUE)# Making ARL Matrix
@@ -427,7 +433,8 @@ Find_IC_RL_Windowed <- function(num.samp=32,
   count <- 1
   track_stat <- NULL
   tstat_proc <- 0
-  dist_ic <- paste("p", dist, sep="")
+  dist_ic <- dist
+  dist <- substring(dist,first=2)
   tau_minus <- NULL
   while(tstat_proc < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
@@ -515,8 +522,8 @@ Process_Stat_W <- function(proc, tau_minus, tstat,
   STAT
 }
 
-Find_CP_RL_Windowed<- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
-                               dist_two="norm", param_two=list(mean=0, sd=2), cp=10,
+Find_CP_RL_Windowed<- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0, sd=1),
+                               dist_two="pnorm", param_two=list(mean=0, sd=2), cp=10,
                                tstat=wave.energy, UCL, WSize=15, throw=TRUE){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
@@ -527,7 +534,9 @@ Find_CP_RL_Windowed<- function(num.samp=32, dist_one="norm", param_one=list(mean
   count <- 1
   track_stat <- NULL
   tstat_proc <- 0
-  dist_ic <- paste("p", dist_one, sep="")
+  dist_ic <- dist_one
+  dist_one <- substring(dist_one, first=2)
+  dist_two <- substring(dist_two, first=2)  
   while(tstat_proc < max(UCL)){
     Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
                                 dist_one=dist_one, param_one=param_one,
