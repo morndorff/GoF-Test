@@ -51,7 +51,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
 wave.energy <- function (x, y, ...,
                          #n=2^5, 
                          doplot=F, 
-                         opt="max", 
+                         opt="sum", 
                          wf="haar",
                          square=FALSE,
                          norm=TRUE)
@@ -204,7 +204,7 @@ wave.den.power <- function (n=2^5, p=500, doplot=F, m=100, doplot1=F)
   c(oc=mean(power.vec[, 1]), ks=mean(power.vec[, 2]), frac=mean(power.vec[, 1]) / mean(power.vec[, 2]))
 }
 
-wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar")
+wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
 {
   library(wavethresh)
   library(waveslim)
@@ -215,7 +215,7 @@ wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar")
     leny <- length(y)
     y <- sort(y)
 
-    num_quan <- min(2^floor(log(lenx,2)), 2^floor(log(leny,2)))
+    num_quan <- min(2^floor(log(lenx/reduce,2)), 2^floor(log(leny/reduce,2)))
     prob <- seq((1-.5)/num_quan, (num_quan-.5)/num_quan, length.out=num_quan)
 
     # Because # of quantiles is < data points, need to interpolate
