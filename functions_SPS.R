@@ -143,7 +143,7 @@ Find_CP_RL_Slow <- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0
   # tstat - Test Statistic for the process
   # UCL - Vector containing Upper Control Limits
   Proc <- NULL # Initializing
-  count <- 1
+  count <- 0
   track_stat <- NULL
   tstat_proc <- 0
   dist_ic <- dist_one
@@ -154,7 +154,9 @@ Find_CP_RL_Slow <- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0
                                 dist_one=dist_one, param_one=param_one,
                                 dist_two=dist_two, param_two=param_two)# good
     tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
-                               dist_ic=dist_ic, params=param_one)
+                               dist_ic=dist_ic, params=param_one, tau_minus=tau_minus)
+    tau_minus <- tstat_proc[[2]]
+    tstat_proc <- tstat_proc[[1]]
     track_stat <- append(track_stat, tstat_proc)
     count <- count +1
   }
@@ -353,13 +355,15 @@ ARL_Proc <- function(UCL, num.samp = 30,
   return(list(ARL, RLs, e_time))
 }
 
-Find_ARL_OOC <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd=1),
-                         dist_two="norm", param_two=list(mean=0, sd=2), cp=1,
+Find_ARL_OOC <- function(num.samp=32, dist_one="qnorm", param_one=list(mean=0, sd=1),
+                         dist_two="qnorm", param_two=list(mean=0, sd=2), cp=1,
                          tstat=wave.energy, UCL, time = 30, method=Find_CP_RL_Fast, ...){
+  # Dist_one and dist_two need to be either qnorm or pnorm
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
   e_time <- 0
   len_UCL <- length(UCL)
+  count <- 0
   # Calculating ARLs
   while(e_time < time){
     RLs_det <- method(num.samp=num.samp, 
@@ -369,6 +373,8 @@ Find_ARL_OOC <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd
     RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]] # Append list of RL's
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
+    count <- count +1
+    print(paste("Iteration ",count, ", Total Time: ",e_time))
   }
   
   matRL <- matrix(unlist(RLs), ncol=len_UCL, byrow=TRUE)# Making ARL Matrix
@@ -381,39 +387,6 @@ Find_ARL_OOC <- function(num.samp=32, dist_one="norm", param_one=list(mean=0, sd
   return(list(ARL, RLs, e_time))
 }
 
-
-JKnife_Est <- function(data, tstat, ...){
-  jack.est <- vector(mode="numeric", length=length(data))
-  for(i in seq_along(data)){
-    jack.est[i] <- tstat(x[-i], ...)
-  }
-  jack.mean <- mean(jack.est)
-}
-
-Old_TSO <- function(proc, tstat, dist_ic, ..., doplot=FALSE, detail=FALSE){
-  # Tracks the value of a statistic for a process
-  # Inputs:
-  # proc: A matrix containing the process
-  # stat: A two-sample test statistic
-  lenproc <- dim(proc)[2] # run length of the process
-  if(is.null(lenproc)) lenproc <- 1
-  
-  ts <- matrix(nrow=3,ncol=lenproc)
-  for(i in 1:(lenproc-1)){
-    ts[1, i] <- tstat(proc[, 1:i], dist_ic, ...)
-    ts[2, i] <- tstat(proc[, (i+1):(lenproc-1)], dist_ic, ...)
-    ts[3, i] <- ts[2,i] - ts[1,i]
-  }
-  STAT <- max(ts[3, i])
-  if(detail){
-    namets <- vector(mode="character", length=(lenproc-1))
-    for(i in 1:(lenproc-1)){
-      namets[i] <- paste(1,":",i, " vs " , i+1, ":", lenproc, sep="")
-    }
-    names(ts) <- namets
-  }
-  STAT
-}
 
 find_max_dif <- function(theta){
   # NOT Absolute Values
