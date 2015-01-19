@@ -263,7 +263,7 @@ wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
   true_quan <- y(prob, ...)
   quan_dif <- x_quans - true_quan
   
-  test_wave <- dwt(quan_dif,wf="haar")
+  test_wave <- dwt(quan_dif,wf="haar", n.levels=log(num_quan,2))
   w_coef <- unlist(test_wave)
   # Take abs. value of wavelet coefficients, sort in decreasing order
   w_coef <- sort(abs(w_coef), decreasing=TRUE) 
