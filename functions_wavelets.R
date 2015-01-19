@@ -251,7 +251,7 @@ wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
   # Assuring diadic lengths
   #nx_p2 <- 2^floor(log(lenx,2))
   
-  num_quan <- 2^floor(log(lenx,2))
+  num_quan <- 2^floor(log(lenx/reduce,2))
   prob <- seq((1-.5)/num_quan, (num_quan-.5)/num_quan, length.out=num_quan)
   
   
