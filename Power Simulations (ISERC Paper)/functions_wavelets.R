@@ -51,7 +51,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
 wave.energy <- function (x, y, ...,
                          #n=2^5, 
                          doplot=F, 
-                         opt="sum", 
+                         opt="max", 
                          wf="haar",
                          square=FALSE,
                          norm=TRUE)
@@ -203,76 +203,3 @@ wave.den.power <- function (n=2^5, p=500, doplot=F, m=100, doplot1=F)
   }
   c(oc=mean(power.vec[, 1]), ks=mean(power.vec[, 2]), frac=mean(power.vec[, 1]) / mean(power.vec[, 2]))
 }
-
-wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
-{
-  library(waveslim)
-  x <- sort(x)
-  lenx <- length(x)
-  # Two Sample Test
-  if (is.numeric(y)) {
-    leny <- length(y)
-    y <- sort(y)
-
-    num_quan <- min(2^floor(log(lenx/reduce,2)), 2^floor(log(leny/reduce,2)))
-    prob <- seq((1-.5)/num_quan, (num_quan-.5)/num_quan, length.out=num_quan)
-
-    # Because # of quantiles is < data points, need to interpolate
-    qx <- quantile(x, probs = prob, type = interp)
-    qy <- quantile(y, probs = prob, type = interp)
-    q_inter_x <- approxfun(prob, qx, yleft = min(qx), yright = max(qx))
-    q_inter_y <- approxfun(prob, qy, yleft = min(qy), yright = max(qy))
-    quan_dif <- q_inter_y(prob) - q_inter_x(prob)
-    
-    test_wave <- dwt(quan_dif,wf="haar")
-    w_coef <- unlist(test_wave)
-    # Take abs. value of wavelet coefficients, sort in decreasing order
-    w_coef <- sort(abs(w_coef), decreasing=TRUE) 
-    # Sum of them
-    sum_coef <- sum(w_coef)
-    # Get number of coefficients to keep, based on 90% thresholding
-    num_coef <- which(cumsum(abs(w_coef))/sum_coef<=.9)
-    th_w_coef<- w_coef[num_coef]
-    STAT <- sum(th_w_coef^2)
-    return(STAT)
-  }
-  
-  # One Sample
-  if (is.list(y)) 
-    y <- names(y)
-  if (is.function(y)) 
-    funname <- as.character(substitute(y))
-  if (is.character(y)) 
-    funname <- y
-  y <- get(funname, mode = "function", envir = parent.frame())
-  if (!is.function(y)) 
-    stop("'y' must be numeric or a function or a string naming a valid function")
-  # Assuring diadic lengths
-  #nx_p2 <- 2^floor(log(lenx,2))
-  
-  num_quan <- 2^floor(log(lenx/reduce,2))
-  prob <- seq((1-.5)/num_quan, (num_quan-.5)/num_quan, length.out=num_quan)
-    
-  # Estimated Quantiles:
-  qx <- quantile(x, probs = prob, type = interp)
-  q_inter_x <- approxfun(prob, qx, yleft = min(qx), yright = max(qx))
-  x_quans <- q_inter_x(prob)
-  # True Quantiles
-  true_quan <- y(prob, ...)
-  quan_dif <- x_quans - true_quan
-  
-  test_wave <- dwt(quan_dif,wf="haar", n.levels=log(num_quan,2))
-  w_coef <- unlist(test_wave)
-  # Take abs. value of wavelet coefficients, sort in decreasing order
-  w_coef <- sort(abs(w_coef), decreasing=TRUE) 
-  # Sum of them
-  sum_coef <- sum(w_coef)
-  # Get number of coefficients to keep, based on 90% thresholding
-  num_coef <- min(1, which(cumsum(abs(w_coef))/sum_coef<=.9))
-  
-  th_w_coef<- w_coef[num_coef]
-  STAT <- sum(th_w_coef^2)
-  return(STAT)
-}
-
-

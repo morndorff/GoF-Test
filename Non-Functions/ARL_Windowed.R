@@ -7,7 +7,7 @@ library(waveslim)
 
 ARL_Matrices <- vector(mode="list")
 ARL_Functions <- vector(mode="list")
-ARL_200 <- vector(mode="list")
+UCL_200 <- vector(mode="list")
 ######## Finding 200 ARL for Windowed Method, Under N(0,1)
 
 UCL <- seq(.01,.085, length.out=100)
@@ -21,8 +21,8 @@ ARL_Curve_SA <- ARL_Proc(UCL=UCL, time=60*60*15,
 
 ### Automatic Finding ##
 ARL_Matrices[[Method_Name]] <- ARL_Curve_SA[[1]]
-ARL_Functions[[Method_Name]] <- approxfun(as.numeric(ARL_Matrices[[Method_Name]][1,]))
-ARL_200[[Method_Name]] <- ARL_Functions[[Method_Name]](200)
+ARL_Functions[[Method_Name]] <- approxfun(as.numeric(ARL_Matrices[[Method_Name]][1,]), UCL)
+UCL_200[[Method_Name]] <- ARL_Functions[[Method_Name]](200)
 save.image(file="ARL_Baseline.RData")
 
 
