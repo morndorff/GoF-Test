@@ -6,6 +6,7 @@ source("functions_string.R")
 source("functions_tstats.R")
 source("functions_wavelets.R")
 source("functions_SPS.R")
+source("functions_MC.R")
 
 quad.area <- function(x1, x2, y1, y2) {
     t1 <- tri.area(x1, x2, y1)
