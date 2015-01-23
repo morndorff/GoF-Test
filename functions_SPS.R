@@ -323,7 +323,7 @@ ARL_Proc <- function(UCL, num.samp = 30,
                      time=60, 
                      method=Find_IC_RL_Fast, 
                      tstat=wave.energy,
-                     dist="norm",
+                     dist="pnorm",
                      params=list(mean=0, sd=1), 
                      ...){
   ptm <- proc.time()
@@ -355,7 +355,7 @@ ARL_Proc <- function(UCL, num.samp = 30,
   return(list(ARL, RLs, e_time))
 }
 
-Find_ARL_OOC <- function(num.samp=32, dist_one="qnorm", param_one=list(mean=0, sd=1),
+Find_ARL_OOC <- function(num.samp=30, dist_one="qnorm", param_one=list(mean=0, sd=1),
                          dist_two="qnorm", param_two=list(mean=0, sd=2), cp=1,
                          tstat=wave.energy, UCL, time = 30, method=Find_CP_RL_Fast, ...){
   # Dist_one and dist_two need to be either qnorm or pnorm
@@ -394,8 +394,8 @@ find_max_dif <- function(theta){
   return(h_t)
 }
 
-Find_IC_RL_Windowed <- function(num.samp=32, 
-                                dist="norm", params=list(mean=0, sd=1), 
+Find_IC_RL_Windowed <- function(num.samp=30, 
+                                dist="pnorm", params=list(mean=0, sd=1), 
                                 tstat=wave.energy, UCL, WSize=10, throw=TRUE, doplot=FALSE){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
@@ -495,9 +495,9 @@ Process_Stat_W <- function(proc, tau_minus, tstat,
   STAT
 }
 
-Find_CP_RL_Windowed<- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0, sd=1),
+Find_CP_RL_Windowed<- function(num.samp=30, dist_one="pnorm", param_one=list(mean=0, sd=1),
                                dist_two="pnorm", param_two=list(mean=0, sd=2), cp=10,
-                               tstat=wave.energy, UCL, WSize=15, throw=TRUE){
+                               tstat=wave.energy, UCL, WSize=10, throw=TRUE){
   # num.samp - Number of Samples
   # dist - Incontrol distribution
   # params - Incontrol distribution parameters
