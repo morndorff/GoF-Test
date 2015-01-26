@@ -42,7 +42,7 @@ Process_Stat <- function(proc, tau_minus, tstat, dist_ic, params, doplot=FALSE, 
     deta <- list("Test Statistic"=STAT,"All Stats"=ts, "Tau Minus"=tau_minus, "Tau Estimate"=which_max_tau)
     return(deta)
   }
-  return(list("Test Statistic"=STAT, c=tau_minus, "Tau Estimate"=which_max_tau))
+  return(list("Test Statistic"=STAT, "Tau Minus"=tau_minus, "Tau Estimate"=which_max_tau))
 }
 
 Find_IC_RL_Slow <- function(num.samp=32, 
@@ -58,23 +58,23 @@ Find_IC_RL_Slow <- function(num.samp=32,
   track_stat <- NULL
   tau_minus <- NULL
   tau_est <- NULL
+  tstat_iter <- 0
   tstat_proc <- 0
   dist_ic <- dist
   dist <- substring(dist,first=2)
-  while(tstat_proc < max(UCL)){
+  while(tstat_iter < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
                                 param=params) # good
-
     tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
                                dist_ic=dist_ic, params=params, tau_minus=tau_minus)
     tau_minus <- tstat_proc[["Tau Minus"]]
-    tstat_proc <- tstat_proc[["Test Statistic"]]
-    track_stat <- append(track_stat, tstat_proc)
+    tstat_iter <- tstat_proc[["Test Statistic"]]
+    track_stat <- append(track_stat, tstat_iter)
     count <- count +1
   }
   tau_est <- tstat_proc[["Tau Estimate"]]
   RL <- sapply(UCL, function(x) min(which(track_stat >= x)))
-  res <- list("h(t)"=track_stat, "Length of Process"=count, "RL for Corresponding UCL"=RL, 
+  res <- list("h(t)"=track_stat, "RL for Corresponding UCL"=RL, 
               "UCLS"=UCL, "Estimated Tau"=tau_est)
   return(res)
 }
@@ -88,26 +88,26 @@ Find_CP_RL_Slow <- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0
   # tstat - Test Statistic for the process
   # UCL - Vector containing Upper Control Limits
   Proc <- NULL # Initializing
-  count <- 0
+  tau_minus <- NULL
   track_stat <- NULL
   tstat_proc <- 0
+  tstat_iter <- 0
   dist_ic <- dist_one
   dist_one <- substring(dist_one, first=2)
   dist_two <- substring(dist_two, first=2)  
-  while(tstat_proc < max(UCL)){
+  while(tstat_iter < max(UCL)){
     Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
                                 dist_one=dist_one, param_one=param_one,
                                 dist_two=dist_two, param_two=param_two)# good
     tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
                                dist_ic=dist_ic, params=param_one, tau_minus=tau_minus)
     tau_minus <- tstat_proc[["Tau Minus"]]
-    tstat_proc <- tstat_proc[["Test Statistic"]]
-    track_stat <- append(track_stat, tstat_proc)
-    count <- count +1
+    tstat_iter <- tstat_proc[["Test Statistic"]]
+    track_stat <- append(track_stat, tstat_iter)
   }
   tau_est <- tstat_proc[["Tau Estimate"]]
   RL <- sapply(UCL, function(x) min(which(track_stat >= x)))
-  res <- list("h(t)"=track_stat, "Length of Process"=count, "RL for Corresponding UCL"=RL, 
+  res <- list("h(t)"=track_stat, "RL for Corresponding UCL"=RL, 
               "UCLS"=UCL, "Estimated Tau"=tau_est)
   return(res)
 }
@@ -155,6 +155,7 @@ Find_ARL_OOC <- function(num.samp=30, dist_one="qnorm", param_one=list(mean=0, s
   # Dist_one and dist_two need to be either qnorm or pnorm
   ptm <- proc.time()
   RLs <- vector(mode="list", length=0)
+  Tau_Estimate <- vector(mode="list", length=0)
   e_time <- 0
   len_UCL <- length(UCL)
   count <- 0
@@ -165,12 +166,14 @@ Find_ARL_OOC <- function(num.samp=30, dist_one="qnorm", param_one=list(mean=0, s
                       dist_two=dist_two, param_two=param_two,
                       tstat=tstat, UCL=UCL, cp=cp, ...)
     RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]] # Append list of RL's
+    Tau_Estimate[[length(Tau_Estimate)+1]]- RLs_det[["Tau Estimate"]]
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
     count <- count +1
     print(paste("Iteration ",count, ", Total Time: ",e_time))
   }
-  
+  Tau_Mean <- mean(unlist(Tau_Estimate))
+  Tau_SD <- sd(unlist(Tau_Estimate))#/sqrt(length(unlist(Tau_Estimate)))
   matRL <- matrix(unlist(RLs), ncol=len_UCL, byrow=TRUE)# Making ARL Matrix
   ARL <- matrix(,nrow=2, ncol=len_UCL) 
   ARL[1,] <- colMeans(matRL)
@@ -178,7 +181,7 @@ Find_ARL_OOC <- function(num.samp=30, dist_one="qnorm", param_one=list(mean=0, s
   colnames(ARL) <- as.character(round(UCL,3))
   rownames(ARL) <- c("mean", "sd")
   print(ARL)
-  return(list(ARL, RLs, e_time))
+  return(list(ARL, RLs, e_time, "Tau Estimate"=Tau_Estimate, "Avg Tau"=Tau_Mean, "Tau SD"=Tau_SD))
 }
 
 Process_Stat_W <- function(proc, tau_minus, tstat, 
@@ -193,10 +196,10 @@ Process_Stat_W <- function(proc, tau_minus, tstat,
   # params: parameters of the in control distribution
   lenproc <- dim(proc)[2] # run length of the process
   num.samp <- dim(proc)[1]
-  # If the proc is initially a vector, its dim value will be 0, so we do this
+  # Should never be needed, unless Window Size is 1
   if(lenproc==1){
+    if(WSize > 1) stop("This should never occur unless WSize=1")
     ts <- NULL
-    
     # ts[1] <- 0
     rdist_ic <- dist.conv.str(dist_ic, "r") # Convert from pnorm to rnorm
     y <- get(rdist_ic, mode="function", envir=parent.frame())
@@ -219,29 +222,30 @@ Process_Stat_W <- function(proc, tau_minus, tstat,
   # Handling g(tau-, H0)
   # ts[1, 1:(lenproc-1)] <- tau_minus
   # ts[1, lenproc] <- do.call(tstat, c(list(proc[,1:lenproc]), list(dist_ic), params))
-  
   if(lenproc!=1) {
     T_minus_W <- lenproc-WSize
     tr <-1 
     for(tau in T_minus_W:(lenproc-1)){
       if(throw){
         ts[1, tr] <- do.call(tstat, c(list(proc[, T_minus_W:tau]), list(dist_ic), params)) #g(H0, tau-)
+        
       } else {
         ts[1, tr] <- do.call(tstat, c(list(proc[, 1:tau]), list(dist_ic), params)) #g(H0, tau-)
       }
       ts[2, tr] <- do.call(tstat, c(list(proc[, (tau+1):lenproc]), list(dist_ic), params)) #g(H0, tau+)
+      #print(tau)
       tr <- tr+1
     }
     ts[3, ] <- ts[2, ] - ts[1, ] # Take difference
   }
+  #print(ts)
   STAT <- max(ts[3,])
-  which_max_tau <- which.max(ts[3,])-1
-  #tau_minus <- ts[1,]
+  which_max_tau <- T_minus_W + which.max(ts[3,]) -1
   if(detail){
     deta <- list("Test Statistic"=STAT, "All Stats"=ts, "Tau Estimate"=which_max_tau)
     return(deta)
   }
-  STAT
+  return(list("Test Statistic"=STAT, "Tau Estimate"=which_max_tau))
 }
 
 Find_IC_RL_Windowed <- function(num.samp=30, 
@@ -256,10 +260,11 @@ Find_IC_RL_Windowed <- function(num.samp=30,
   count <- 1
   track_stat <- NULL
   tstat_proc <- 0
+  tstat_iter <- 0
   dist_ic <- dist
   dist <- substring(dist,first=2)
   tau_minus <- NULL
-  while(tstat_proc < max(UCL)){
+  while(tstat_iter < max(UCL)){
     Proc <- Sim_IC_Process_Iter(proc=Proc, num.samp=num.samp, dist=dist, 
                                 param=params) # good
     lenproc <- dim(Proc)[2]
@@ -268,13 +273,15 @@ Find_IC_RL_Windowed <- function(num.samp=30,
       tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
                                  dist_ic=dist_ic, params=params, tau_minus=tau_minus)
       tau_minus <- tstat_proc[["Tau Minus"]]
-      tstat_proc <- tstat_proc[["Test Statistic"]]
-      track_stat <- append(track_stat, tstat_proc)
+      tstat_iter <- tstat_proc[["Test Statistic"]]
+      track_stat <- append(track_stat, tstat_iter)
       count <- count +1
     } else { # If W > T, calculate using Windowed Version
       tstat_proc <- Process_Stat_W(proc=Proc, tstat=tstat, 
                                    dist_ic=dist_ic, params=params, WSize=WSize, throw=throw)
-      track_stat <- append(track_stat, tstat_proc)
+      tstat_iter <- tstat_proc[["Test Statistic"]]
+      track_stat <- append(track_stat, tstat_iter)
+      #track_stat <- append(track_stat, tstat_proc)
       count <- count +1
     }
   }
@@ -294,13 +301,14 @@ Find_CP_RL_Windowed<- function(num.samp=30, dist_one="pnorm", param_one=list(mea
   # tstat - Test Statistic for the process
   # UCL - Vector containing Upper Control Limits
   Proc <- NULL # Initializing
-  count <- 1
   track_stat <- NULL
   tstat_proc <- 0
+  tstat_iter <- 0
+  tau_minus <- NULL
   dist_ic <- dist_one
   dist_one <- substring(dist_one, first=2)
   dist_two <- substring(dist_two, first=2)  
-  while(tstat_proc < max(UCL)){
+  while(tstat_iter  < max(UCL)){
     Proc <- Sim_CP_Process_Iter(proc=Proc, num.samp=num.samp, cp=cp, 
                                 dist_one=dist_one, param_one=param_one,
                                 dist_two=dist_two, param_two=param_two)# good
@@ -309,23 +317,25 @@ Find_CP_RL_Windowed<- function(num.samp=30, dist_one="pnorm", param_one=list(mea
     if(WSize >= lenproc){
       tstat_proc <- Process_Stat(proc=Proc, tstat=tstat, 
                                  dist_ic=dist_ic, params=param_one, tau_minus=tau_minus)
-      tau_minus <- tstat_proc[[2]]
-      tstat_proc <- tstat_proc[[1]]
-      track_stat <- append(track_stat, tstat_proc)
-      count <- count +1
+      tau_minus <- tstat_proc[["Tau Minus"]]
+      tstat_iter <- tstat_proc[["Test Statistic"]]
+      track_stat <- append(track_stat, tstat_iter)
     } else { # If W > T, calculate using Windowed Version
       tstat_proc <- Process_Stat_W(proc=Proc, tstat=tstat, 
                                    dist_ic=dist_ic, params=param_one, 
                                    WSize=WSize, throw=throw)
-      track_stat <- append(track_stat, tstat_proc)
-      count <- count +1
+      #print(paste("Used Window, time=", lenproc))
+      tstat_iter <- tstat_proc[["Test Statistic"]]
+      track_stat <- append(track_stat, tstat_iter)
     }
   }
   tau_est <- tstat_proc[["Tau Estimate"]]
   RL <- sapply(UCL, function(x) min(which(track_stat >= x)))
-  res <- list("h(t)"=track_stat, "Length of Process"=count, "RL for Corresponding UCL"=RL, "UCLS"=UCL, "Proc"=Proc)
+  res <- list("h(t)"=track_stat, "RL for Corresponding UCL"=RL,
+              "UCLS"=UCL, "Estimated Tau"=tau_est)
   return(res)
 }
+
 Sim_IC_Process <- function(num.samp, run.length, dist, params){
   # Simulates a process of run length N with samples of size k
   # Inputs:

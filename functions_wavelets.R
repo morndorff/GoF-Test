@@ -215,7 +215,7 @@ wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
 
 
 wave.energy2 <- function (x, y, ...,
-                         n=2^5, 
+                         n=2^4, 
                          doplot=F, 
                          opt="sum", 
                          wf="haar",
@@ -230,7 +230,8 @@ wave.energy2 <- function (x, y, ...,
   # Two Sample
   if(is.numeric(y)){
     F.y <- ecdf(y)
-    if(n > min(length(x),length(y))) n <- 2^floor(log(min(length(x),length(y)),2))
+    # if(n > min(length(x),length(y))) n <- 2^floor(log(min(length(x),length(y)),2))
+    
     # ml <- min(length(x),length(y))
     # n <- 2^floor(log2(ml))
     z <- seq(range(x, y)[1], range(x, y)[2], length=n)
@@ -250,7 +251,7 @@ wave.energy2 <- function (x, y, ...,
     y <- get(funname, mode = "function", envir = parent.frame())
     if (!is.function(y)) 
       stop("'y' must be numeric or a function or a string naming a valid function")
-    if(n > length(x)) n <- 2^floor(log(length(x),2))
+    # if(n > length(x)) n <- 2^floor(log(length(x),2))
     z <- seq(min(x), max(x), length=n)
     F.x.dwt <- dwt(F.x(z), wf=wf, n.levels=log(n, 2))
     F.y.dwt <- dwt(y(z,...), wf=wf, n.levels=log(n, 2))
