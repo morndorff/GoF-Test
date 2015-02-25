@@ -133,10 +133,11 @@ ARL_Proc <- function(UCL, num.samp = 30,
                       tstat=tstat, 
                       UCL=UCL, ...)
     RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]]
+    Max_RL <- max(unlist(RLs_det[["RL for Corresponding UCL"]]))    
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
     count <- count +1
-    print(paste("Iteration ",count, ", Total Time: ",e_time))
+    print(paste("Iteration ",count, ", Total Time: ",e_time, " RL:", Max_RL))
   }
   
   matRL <- matrix(unlist(RLs), ncol=len_UCL, byrow=TRUE)# Making ARL Matrix
@@ -166,7 +167,7 @@ Find_ARL_OOC <- function(num.samp=30, dist_one="qnorm", param_one=list(mean=0, s
                       dist_two=dist_two, param_two=param_two,
                       tstat=tstat, UCL=UCL, cp=cp, ...)
     RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]] # Append list of RL's
-    Tau_Estimate[[length(Tau_Estimate)+1]]- RLs_det[["Tau Estimate"]]
+    Tau_Estimate[[length(Tau_Estimate)+1]]<- RLs_det[["Estimated Tau"]]
     howlong <- proc.time()-ptm
     e_time <- howlong["elapsed"]
     count <- count +1
