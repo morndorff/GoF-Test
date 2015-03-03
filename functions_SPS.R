@@ -112,7 +112,49 @@ Find_CP_RL_Slow <- function(num.samp=32, dist_one="pnorm", param_one=list(mean=0
   return(res)
 }
 
-# Temporary function
+ARL_Proc_Tol <- function(UCL, num.samp = 30,
+                          tolerance=10,
+                          method=Find_IC_RL_Fast, 
+                          tstat=wave.energy,
+                          dist="pnorm",
+                          params=list(mean=0, sd=1),
+                          min_rl=10,
+                          ...){
+  ptm <- proc.time()
+  RLs <- vector(mode="list", length=0)
+  tol <- tolerance +1
+  e_time <- 0
+  count <- 0
+  len_UCL <- length(UCL)
+  track_max_rl <- NULL
+  # Calculating ARLs
+  while(tol > tolerance){
+    RLs_det <- method(num.samp=num.samp, 
+                      dist=dist, 
+                      params=params,
+                      tstat=tstat, 
+                      UCL=UCL, ...)
+    RLs[[length(RLs)+1]] <- RLs_det[["RL for Corresponding UCL"]]
+    Max_RL <- max(unlist(RLs_det[["RL for Corresponding UCL"]]))  
+    track_max_rl <- append(track_max_rl,Max_RL)
+    if(length(track_max_rl)>min_rl)  tol <- sd(track_max_rl)/sqrt(length(track_max_rl))
+    howlong <- proc.time()-ptm
+    e_time <- howlong["elapsed"]
+    count <- count +1
+    print(paste("Iteration ",count, ", Total Time: ",e_time, " RL:", Max_RL))
+  }
+  
+  matRL <- matrix(unlist(RLs), ncol=len_UCL, byrow=TRUE)# Making ARL Matrix
+  ARL <- matrix(,nrow=2, ncol=len_UCL) 
+  ARL[1,] <- colMeans(matRL)
+  ARL[2,] <- apply(matRL, 2, sd)
+  colnames(ARL) <- as.character(round(UCL,3))
+  rownames(ARL) <- c("mean", "sd")
+  print(ARL)
+  return(list(ARL, RLs, e_time))
+}
+
+
 ARL_Proc <- function(UCL, num.samp = 30,
                      time=60, 
                      method=Find_IC_RL_Fast, 

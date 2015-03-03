@@ -72,42 +72,37 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   # 
   # Output:
   # list containing observed test statistic, 
-  if (is.null(distops)==FALSE){
-    if(is.list(distops)==FALSE) stop("distops must be a list")
-  }
-  if (is.null(fops)==FALSE){
-    if(is.list(fops)==FALSE) stop("fops must be a list")
-  }
+  #if (is.null(distops)==FALSE){
+  #  if(is.list(distops)==FALSE) stop("distops must be a list")
+  #}
+  if(! (is.null(distops) || is.list(distops))){stop("distops should be NULL or a list")}
+  if(! (is.null(fops) || is.list(fops))){stop("fops should be NULL or a list")}
+
   if (out==TRUE){
     res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact)
     return(res_out)
   }
-  lenx <- length(x)
+  
   
   # Handling function inputs for y
-  if (is.function(y)) 
-    y <- as.character(substitute(y))
+  if (is.function(y)) y <- as.character(substitute(y))
+  if (is.character(y)) y <- chartoli(y)
   
   # Calculating observed test statistic
   # One Sample
-  if (is.character(y)) {
-    y <- chartoli(y)
-    if (length(fops) == 0) 
-      fops <- NULL
-    if (length(distops) == 0) 
-      distops <- NULL
+  if (is.list(y)) {
+    if (length(fops) == 0) fops <- NULL
+    if (length(distops) == 0) distops <- NULL
     ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))
   }
   # Two sample
   if (is.numeric(y)){
-    if (length(fops)== 0)
-      fops <- NULL
-    if (is.null(fops[[1]])) # MUST BE EDITED ASAP. ONLY LETS ONE OPTION IN FOPS
-        fops <- NULL
+    if (length(fops)== 0) fops <- NULL
     ts.obs <- do.call(f, c(list(x,y), fops))
   }
-  ts.random <- vector(mode = "numeric", length = num.perm)
   
+  lenx <- length(x)
+  ts.random <- vector(mode = "numeric", length = num.perm)
   # Two sample
   if (is.numeric(y)) {
     z <- c(x, y)
