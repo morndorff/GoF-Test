@@ -226,3 +226,46 @@
 #   }
 #   c(oc=mean(power.vec[, 1]), ks=mean(power.vec[, 2]), frac=mean(power.vec[, 1]) / mean(power.vec[, 2]))
 # }
+# 
+# boot.test <- function(x, y, f, num.perm = 1000, diag = FALSE, exact = TRUE) {
+#   # Runs a BOOTSTRAP test for a given function (Note: Input function should JUST
+#   # output p-value) Takes as input f, a function that returns a statistic
+#   require(gtools)
+#   lenx <- length(x)
+#   leny <- length(y)
+#   # First Step, combine into one dataset
+#   z <- c(x, y)
+#   lenz <- length(z)
+#   # Calculate TS for the ACTUAL data
+#   ts.obs <- f(x, y)
+#   ts.random <- c(NULL)
+#   ### 
+#   if (lenz < 10 & exact == TRUE) {
+#     all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
+#                              set = FALSE)
+#     all.permx <- all.perm[, 1:lenx]
+#     all.permy <- all.perm[, (lenx + 1):lenz]
+#     exact.perm <- dim(all.perm)[1]
+#     for (i in 1:exact.perm) {
+#       ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
+#     }
+#     p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
+#     c.val <- quantile(ts.random, probs = 0.95)
+#   } else {
+#     for (i in 1:num.perm) {
+#       z1 <- sample(z, size = lenz, replace = TRUE)
+#       a <- z1[1:lenx]
+#       b <- z1[(lenx + 1):lenz]
+#       ts.random[i] <- f(a, b)
+#     }
+#     p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
+#     c.val <- quantile(ts.random, probs = 0.95)
+#   }
+#   
+#   # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
+#   # statistic
+#   if (diag == TRUE) 
+#     return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random)) else {
+#       return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
+#     }
+# }

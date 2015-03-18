@@ -277,3 +277,45 @@ perm.test2 <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, di
     }
   }
 }
+
+cvm.res <- function(x,y){
+  # x: numeric vector
+  # y: numeric vector or prob distribution e.g. "pnorm" 
+  if (is.numeric(x) != TRUE) 
+    stop("x must be numeric")
+  x <- sort(x)
+  lenx <- length(x)
+  # Two Sample Test
+  if (is.numeric(y)) {
+    sortx <- x
+    lenx = length(sortx)
+    sorty = sort(y)
+    leny = length(sorty)
+    a = data.frame(val = sortx, rang = seq(lenx), ens = rep(1, lenx))
+    b = data.frame(val = sorty, rang = seq(leny), ens = rep(2, leny))
+    d = rbind(a, b)
+    d = d[order(d$val), ]
+    d = data.frame(d, rangTot = seq(lenx + leny))
+    dtfM = d[which(d$ens == 1), ]
+    dtfN = d[which(d$ens == 2), ]
+    somN = sum((dtfN$rang - dtfN$rangTot)^2)
+    somM = sum((dtfM$rang - dtfM$rangTot)^2)
+    U = leny * somN + lenx * somM
+    CvM = ((U/(leny * lenx))/(leny + lenx)) - ((4 * lenx * leny - 1)/(6 * (lenx + leny)))
+    return(CvM)
+  }
+  # One Sample Test  
+  if (is.list(y)) 
+    y <- names(y)
+  if (is.function(y)) 
+    funname <- as.character(substitute(y))
+  if (is.character(y)) 
+    funname <- y
+  y <- get(funname, mode = "function", envir = parent.frame())
+  if (!is.function(y)) 
+    stop("'y' must be numeric or a function or a string naming a valid function")
+  F_x <- y(x)
+  i <- 1:lenx
+  STAT <- 1/(12*lenx) + sum(((2*i-1)/(2*lenx) - y(x))^2)
+  STAT
+}

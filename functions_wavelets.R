@@ -207,12 +207,10 @@ wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
   sum_coef <- sum(w_coef)
   # Get number of coefficients to keep, based on 90% thresholding
   num_coef <- min(1, which(cumsum(abs(w_coef))/sum_coef<=.9))
-  
   th_w_coef<- w_coef[num_coef]
   STAT <- sum(th_w_coef^2)
   return(STAT)
 }
-
 
 wave.energy2 <- function (x, y, ...,
                          n=2^4, 
