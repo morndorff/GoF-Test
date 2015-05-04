@@ -22,8 +22,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
     y <- get(funname, mode = "function", envir = parent.frame())
     if (!is.function(y)) 
       stop("'y' must be numeric or a function or a string naming a valid function")
-    
-    
+        
     n <- 2^floor(log2(length(x)))
     z <- seq(min(x),max(x),length=n)
     F.dwt <- dwt(F.x(z) - y(z,...), wf=wf, n.levels=log(n,2))
