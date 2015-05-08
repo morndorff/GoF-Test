@@ -314,8 +314,8 @@ cvm.res <- function(x,y){
   y <- get(funname, mode = "function", envir = parent.frame())
   if (!is.function(y)) 
     stop("'y' must be numeric or a function or a string naming a valid function")
-  F_x <- y(x)
+  F_x <- y(x, ...)
   i <- 1:lenx
-  STAT <- 1/(12*lenx) + sum(((2*i-1)/(2*lenx) - y(x))^2)
+  STAT <- 1 / (12 * lenx) + sum(((2 * (i-1)) / (2 * lenx) - F_x(x))^2)
   STAT
 }
