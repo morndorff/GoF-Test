@@ -1,3 +1,0 @@
-We consider the problem of changepoint detection where at each observation a sample from a distribution is observed.   The changepoints are detecting using a statistic based on differences in the empirical CDF, while incorporating wavelet shrinkage. This shrinkage enables the test to retain good power in detecting changepoints.  The approach used is nonparametic, using no particular distributional assumptions on the in-control process. This power is shown via simulation studies.
-
-

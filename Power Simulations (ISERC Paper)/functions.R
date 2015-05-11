@@ -6,8 +6,6 @@ source("functions_string.R")
 source("functions_tstats.R")
 source("functions_wavelets.R")
 source("functions_SPS.R")
-source("functions_MC.R")
-source("functions_fourier.R")
 
 quad.area <- function(x1, x2, y1, y2) {
     t1 <- tri.area(x1, x2, y1)
@@ -19,7 +17,48 @@ tri.area <- function(x, y, z) {
     area <- 0.5 * abs((x[1] - z[1]) * (y[2] - x[2]) - (x[1] - y[1]) * (z[2] - x[2]))
     return(area)
 }
-
+boot.test <- function(x, y, f, num.perm = 1000, diag = FALSE, exact = TRUE) {
+    # Runs a BOOTSTRAP test for a given function (Note: Input function should JUST
+    # output p-value) Takes as input f, a function that returns a statistic
+    require(gtools)
+    lenx <- length(x)
+    leny <- length(y)
+    # First Step, combine into one dataset
+    z <- c(x, y)
+    lenz <- length(z)
+    # Calculate TS for the ACTUAL data
+    ts.obs <- f(x, y)
+    ts.random <- c(NULL)
+    ### 
+    if (lenz < 10 & exact == TRUE) {
+        all.perm <- permutations(n = lenz, r = lenz, v = z, repeats.allowed = FALSE, 
+            set = FALSE)
+        all.permx <- all.perm[, 1:lenx]
+        all.permy <- all.perm[, (lenx + 1):lenz]
+        exact.perm <- dim(all.perm)[1]
+        for (i in 1:exact.perm) {
+            ts.random[i] <- f(all.permx[i, ], all.permy[i, ])
+        }
+        p.val <- sum(abs(ts.random) >= abs(ts.obs))/exact.perm
+        c.val <- quantile(ts.random, probs = 0.95)
+    } else {
+        for (i in 1:num.perm) {
+            z1 <- sample(z, size = lenz, replace = TRUE)
+            a <- z1[1:lenx]
+            b <- z1[(lenx + 1):lenz]
+            ts.random[i] <- f(a, b)
+        }
+        p.val <- sum(abs(ts.random) >= abs(ts.obs))/num.perm
+        c.val <- quantile(ts.random, probs = 0.95)
+    }
+    
+    # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
+    # statistic
+    if (diag == TRUE) 
+        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs, ts.dist = ts.random)) else {
+        return(list(`p-value` = p.val, `95% crit val` = c.val, `Obs. TS` = ts.obs))
+    }
+}
 perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
                       exact = FALSE, out=FALSE, do.plot=FALSE, ...) {
   #Args: 
@@ -32,37 +71,42 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
   # 
   # Output:
   # list containing observed test statistic, 
-  #if (is.null(distops)==FALSE){
-  #  if(is.list(distops)==FALSE) stop("distops must be a list")
-  #}
-  if(! (is.null(distops) || is.list(distops))){stop("distops should be NULL or a list")}
-  if(! (is.null(fops) || is.list(fops))){stop("fops should be NULL or a list")}
-
+  if (is.null(distops)==FALSE){
+    if(is.list(distops)==FALSE) stop("distops must be a list")
+  }
+  if (is.null(fops)==FALSE){
+    if(is.list(fops)==FALSE) stop("fops must be a list")
+  }
   if (out==TRUE){
     res_out <- perm.test.out(x,y,distops,f,fops,num.perm,diag,exact)
     return(res_out)
   }
-  
+  lenx <- length(x)
   
   # Handling function inputs for y
-  if (is.function(y)) y <- as.character(substitute(y))
-  if (is.character(y)) y <- chartoli(y)
+  if (is.function(y)) 
+    y <- as.character(substitute(y))
   
   # Calculating observed test statistic
   # One Sample
-  if (is.list(y)) {
-    if (length(fops) == 0) fops <- NULL
-    if (length(distops) == 0) distops <- NULL
+  if (is.character(y)) {
+    y <- chartoli(y)
+    if (length(fops) == 0) 
+      fops <- NULL
+    if (length(distops) == 0) 
+      distops <- NULL
     ts.obs <- do.call(f, c(list(x), list(names(y)), distops, fops))
   }
   # Two sample
   if (is.numeric(y)){
-    if (length(fops)== 0) fops <- NULL
+    if (length(fops)== 0)
+      fops <- NULL
+    if (is.null(fops[[1]])) # MUST BE EDITED ASAP. ONLY LETS ONE OPTION IN FOPS
+        fops <- NULL
     ts.obs <- do.call(f, c(list(x,y), fops))
   }
-  
-  lenx <- length(x)
   ts.random <- vector(mode = "numeric", length = num.perm)
+  
   # Two sample
   if (is.numeric(y)) {
     z <- c(x, y)
@@ -94,7 +138,6 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
       hplot <- hist(ts.random, prob=TRUE)
       hplot
       segments(ts.obs, 0, x1=ts.obs, y1=max(hplot$density))
-      segments(c.val, 0, x1=c.val, y1=max(hplot$density), col="red")
     }
     if (diag == TRUE) {
       return(list("p-value" = p.val, "95% crit val" = c.val, "Obs. TS" = ts.obs, 
