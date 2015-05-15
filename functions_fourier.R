@@ -125,10 +125,12 @@ Fan_Test <- function(x, y, ...){
   bp <- seq(0, 1, length.out=nbin) # Bins are equally spaced
   int <- findInterval(x_unit, bp) # Binning
   counts <- as.numeric(table(int))   # Gives counts in each interval
-  print(counts)
+  #print(counts)
   Y_j <- 2 * (sqrt(counts)- sqrt(lenx/nbin)) # Square root transform
-  print(Y_j)
+  # Now is Y ~ N (theta, Inbin)
+  sum(Y_j)
+  #print(Y_j)
   # Now we take orthogonal transform
-  X_lambda <- fft(Y_j)
-  X_lambda
+  #X_lambda <- fft(Y_j)
+  #X_lambda
 }
