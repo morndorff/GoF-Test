@@ -106,7 +106,7 @@ fft_test <- function(x,y, ...){
   fft(x_unit)
 }
 
-Fan_Test <- function(x, y, ...){
+Fan_Test <- function(x, y, ..., m=2){
   if(is.numeric(y)) stop("One Sample Test Only")
   if (is.list(y)) 
     y <- names(y)
@@ -121,16 +121,26 @@ Fan_Test <- function(x, y, ...){
   x_unit <- y(x, ...)
   
   # Creating Sub Intervals
-  nbin <- ceiling(sqrt(lenx)) #ad hoc. Will work decently well for samples around 100
+  nbin <- 2^(floor(log2(lenx))) # Recommended by Fan
+  # print(nbin)
   bp <- seq(0, 1, length.out=nbin) # Bins are equally spaced
   int <- findInterval(x_unit, bp) # Binning
   counts <- as.numeric(table(int))   # Gives counts in each interval
-  #print(counts)
+  # print(counts)
   Y_j <- 2 * (sqrt(counts)- sqrt(lenx/nbin)) # Square root transform
+  # print(" Bin Transform")
+  #print(Y_j)
   # Now is Y ~ N (theta, Inbin)
-  sum(Y_j)
+  # sum(Y_j)
   #print(Y_j)
   # Now we take orthogonal transform
-  #X_lambda <- fft(Y_j)
-  #X_lambda
+  X_lambda <- fft(Y_j)
+  #print("fft")
+  # print(X_lambda)
+  X_lambda <- (abs(X_lambda)/ lenx)^2
+  #print("squared")
+  #print(X_lambda)
+  #print(X_lambda)
+  STAT <- sum(X_lambda[1:m])
+  STAT
 }
