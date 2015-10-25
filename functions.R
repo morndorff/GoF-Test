@@ -8,6 +8,7 @@ source("functions_wavelets.R")
 source("functions_SPS.R")
 source("functions_MC.R")
 source("functions_fourier.R")
+source("functions_cv.R")
 
 quad.area <- function(x1, x2, y1, y2) {
     t1 <- tri.area(x1, x2, y1)
@@ -199,14 +200,10 @@ Bi_Var_PIT_ks <- function(x,y, alpha=.05){
 }
 
 scale_two_sample <- function(x,y){
-  max_x <- max(x)
-  max_y <- max(y)
-  min_x <- min(x)
-  min_y <- min(y)
   max_com <- max(x,y)
   min_com <- min(x,y)
-  range_x <- max_x - min_x
-  range_y <- max_y - min_y
+  range_x <- max(x) - min(y)
+  range_y <- max(y) - min(y)
   range_com <- max_com - min_com
   if(range_x > range_y){
     scaled_x <- (x - min_com) / range_com
