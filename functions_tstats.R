@@ -1,5 +1,5 @@
 # Test statistic functions
-Max_Quan_TS <- function(x, y, ..., interp = 4, do.plot = FALSE) {
+Max_Quan_TS <- function(x, y, ..., interp = 4, do.plot = FALSE, scale=FALSE) {
   # Computes maximum difference of quantiles 
   # Comments: OBC Using Linear Interpolation
   # of the ECDF Recall: ECDF range is [1/n,1]. This is probably not realistic 
@@ -19,6 +19,11 @@ Max_Quan_TS <- function(x, y, ..., interp = 4, do.plot = FALSE) {
   lenx <- length(x)
   # Two Sample Test
   if (is.numeric(y)) {
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+    }
     leny <- length(y)
     y <- sort(y)
     # x1 and y1 are the quantile values

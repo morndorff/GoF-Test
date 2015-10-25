@@ -1,4 +1,4 @@
-wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
+wave.den <- function (x, y, ..., doplot=F, wf="haar", scale=FALSE)  #n=2^5
 {
   # Inputs:
   # Y must either be numeric or "p"dist
@@ -6,11 +6,18 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
   
   # Two Sample 
   if(is.numeric(y)){
-  F.y <- ecdf(y)
-  ml <- min(length(x),length(y)) 
-  n <- 2^floor(log2(ml))
-  z <- seq(range(x, y)[1], range(x, y)[2], length.out=n)
-  F.dwt <- dwt(F.x(z) - F.y(z), wf=wf, n.levels=log(n, 2))
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+      F.x <- ecdf(x)
+      # return(newdata)
+    }
+    F.y <- ecdf(y)
+    ml <- min(length(x),length(y)) 
+    n <- 2^floor(log2(ml))
+    z <- seq(range(x, y)[1], range(x, y)[2], length.out=n)
+    F.dwt <- dwt(F.x(z) - F.y(z), wf=wf, n.levels=log(n, 2))
   } else{
     # One Sample
     if (is.list(y)) 
@@ -22,7 +29,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
     y <- get(funname, mode = "function", envir = parent.frame())
     if (!is.function(y)) 
       stop("'y' must be numeric or a function or a string naming a valid function")
-        
+    
     n <- 2^floor(log2(length(x)))
     z <- seq(min(x),max(x),length=n)
     F.dwt <- dwt(F.x(z) - y(z,...), wf=wf, n.levels=log(n,2))
@@ -30,7 +37,7 @@ wave.den <- function (x, y, ..., doplot=F, wf="haar")  #n=2^5
   oc <- unlist(F.dwt)
   oc <- max(abs(oc))
   #test_ks <- max(abs(F.x(z)-F.y(z)))
-
+  
   if(doplot)
   {
     plot(z, F.x(z), type="l", 
@@ -53,7 +60,8 @@ wave.energy <- function (x, y, ...,
                          opt="sum", 
                          wf="haar",
                          square=FALSE,
-                         norm=TRUE)
+                         norm=TRUE,
+                         scale=FALSE)
 {
   # Args:
   # y must be numeric of a "p" distribution function
@@ -62,16 +70,22 @@ wave.energy <- function (x, y, ...,
   F.x <- ecdf(x)
   # Two Sample
   if(is.numeric(y)){
-  F.y <- ecdf(y)
-  
-  ml <- min(length(x),length(y))
-  n <- 2^floor(log2(ml))
-  z <- seq(range(x, y)[1], range(x, y)[2], length=n)
-  
-  F.x.dwt <- dwt(F.x(z), wf=wf, n.levels=log(n, 2))
-  F.y.dwt <- dwt(F.y(z), wf=wf, n.levels=log(n, 2))
-  x.dwt <- unlist(F.x.dwt)
-  y.dwt <- unlist(F.y.dwt)
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+      F.x <- ecdf(x)
+    }
+    F.y <- ecdf(y)
+    
+    ml <- min(length(x),length(y))
+    n <- 2^floor(log2(ml))
+    z <- seq(range(x, y)[1], range(x, y)[2], length=n)
+    
+    F.x.dwt <- dwt(F.x(z), wf=wf, n.levels=log(n, 2))
+    F.y.dwt <- dwt(F.y(z), wf=wf, n.levels=log(n, 2))
+    x.dwt <- unlist(F.x.dwt)
+    y.dwt <- unlist(F.y.dwt)
   }else{
     # One Sample
     if (is.list(y)) 
@@ -93,15 +107,15 @@ wave.energy <- function (x, y, ...,
   }
   
   if(square==FALSE){
-  x.dwt <- sort(abs(x.dwt), decreasing = TRUE)
-  y.dwt <- sort(abs(y.dwt), decreasing = TRUE)
+    x.dwt <- sort(abs(x.dwt), decreasing = TRUE)
+    y.dwt <- sort(abs(y.dwt), decreasing = TRUE)
   }
   # What if we square the coefficients?
   if(square){
-  x.dwt <- sort(x.dwt^2, decreasing=TRUE)
-  y.dwt <- sort(y.dwt^2, decreasing=TRUE)
+    x.dwt <- sort(x.dwt^2, decreasing=TRUE)
+    y.dwt <- sort(y.dwt^2, decreasing=TRUE)
   }
-
+  
   xx <- cumsum(x.dwt)
   yy <- cumsum(y.dwt)
   max_x <- tail(xx, 1)
@@ -117,8 +131,8 @@ wave.energy <- function (x, y, ...,
     }
   }
   if(norm==TRUE){  
-  xx <- xx / max_x
-  yy <- yy / max_y
+    xx <- xx / max_x
+    yy <- yy / max_y
   }
   if(doplot){
     plot(xx, type="l", ylim=range(xx, yy, xx - yy))
@@ -141,13 +155,19 @@ wave.energy <- function (x, y, ...,
 }
 
 
-wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2)
+wave.bec <- function(x,y, ..., interp = 4, doplot=F, wf="haar", reduce=2, scale=FALSE)
 {
   library(waveslim)
   x <- sort(x)
   lenx <- length(x)
   # Two Sample Test
   if (is.numeric(y)) {
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+    }
+    x <- sort(x)
     leny <- length(y)
     y <- sort(y)
 
@@ -217,7 +237,8 @@ wave.energy2 <- function (x, y, ...,
                          opt="sum", 
                          wf="haar",
                          square=FALSE,
-                         norm=TRUE)
+                         norm=TRUE,
+                         scale=FALSE)
 {
   # Args:
   # y must be numeric of a "p" distribution function
@@ -226,6 +247,12 @@ wave.energy2 <- function (x, y, ...,
   F.x <- ecdf(x)
   # Two Sample
   if(is.numeric(y)){
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+      F.x <- ecdf(x)
+    }
     F.y <- ecdf(y)
     # if(n > min(length(x),length(y))) n <- 2^floor(log(min(length(x),length(y)),2))
     
@@ -304,7 +331,7 @@ wave.energy2 <- function (x, y, ...,
   }
 }
 
-wave.den2 <- function (x, y, ..., doplot=F, wf="haar", n=2^5)
+wave.den2 <- function (x, y, ..., doplot=F, wf="haar", n=2^5, scale=FALSE)
 {
   # Inputs:
   # Y must either be numeric or "p"dist
@@ -312,6 +339,12 @@ wave.den2 <- function (x, y, ..., doplot=F, wf="haar", n=2^5)
   F.x <- ecdf(x)
   # Two Sample 
   if(is.numeric(y)){
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+      F.x <- ecdf(x)
+    }
     if(n > min(length(x),length(y))) n <- 2^floor(log(min(length(x),length(y)),2))
     F.y <- ecdf(y)
     ml <- min(length(x),length(y)) 
@@ -365,13 +398,19 @@ wave.den2 <- function (x, y, ..., doplot=F, wf="haar", n=2^5)
 
 }
 
-wave.bec2 <- function(x,y, ..., interp = 4, doplot=F, wf="haar", n=2^5)
+wave.bec2 <- function(x,y, ..., interp = 4, doplot=F, wf="haar", n=2^5, scale=FALSE)
 {
   library(waveslim)
   x <- sort(x)
   lenx <- length(x)
   # Two Sample Test
   if (is.numeric(y)) {
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+      x <- sort(x)
+    }
     leny <- length(y)
     y <- sort(y)
     if(n > min(length(x),length(y))) n <- 2^floor(log(min(length(x),length(y)),2))
@@ -438,4 +477,61 @@ wave.bec2 <- function(x,y, ..., interp = 4, doplot=F, wf="haar", n=2^5)
   th_w_coef<- w_coef[num_coef]
   STAT <- sum(th_w_coef^2)
   return(STAT)
+}
+
+wave.mark <- function(x, y, ..., doplot=F, wf="haar", scale=FALSE)  #n=2^5
+{
+  # Inputs:
+  # Y must either be numeric or "p"dist
+  F.x <- ecdf(x)
+  
+  # Two Sample 
+  if(is.numeric(y)){
+    if(scale){
+      newdata <- scale_two_sample(x,y)
+      x <- newdata[[1]]
+      y <- newdata[[2]]
+      F.x <- ecdf(x)
+      # return(newdata)
+    }
+    F.y <- ecdf(y)
+    ml <- min(length(x),length(y)) 
+    n <- 2^floor(log2(ml))
+    z <- seq(range(x, y)[1], range(x, y)[2], length.out=n)
+    F.dwt <- dwt(F.x(z) - F.y(z), wf=wf, n.levels=log(n, 2))
+  } else{
+    # One Sample
+    if (is.list(y)) 
+      y <- names(y)
+    if (is.function(y)) 
+      funname <- as.character(substitute(y))
+    if (is.character(y)) 
+      funname <- y
+    y <- get(funname, mode = "function", envir = parent.frame())
+    if (!is.function(y)) 
+      stop("'y' must be numeric or a function or a string naming a valid function")
+    
+    n <- 2^floor(log2(length(x)))
+    z <- seq(min(x),max(x),length=n)
+    F.dwt <- dwt(F.x(z) - y(z,...), wf=wf, n.levels=log(n,2))
+    # Begin thresholding
+    
+  }
+  oc <- unlist(F.dwt)
+  oc <- max(abs(oc))
+  #test_ks <- max(abs(F.x(z)-F.y(z)))
+  
+  if(doplot)
+  {
+    plot(z, F.x(z), type="l", 
+         ylim=range(1.1, F.x(z), F.y(z), F.x(z) - F.y(z)))
+    lines(z, F.y(z), col=3)
+    lines(z, F.x(z) - F.y(z), col=4)
+    abline(h=0, lty=3)
+    abline(h=1, lty=3)
+    segments(z[1], 0, z[1], oc, lwd=2)
+    #segments(z[3], 0, z[3], ks, lwd=2)
+    title(paste("oc = ", round(oc, 2),sep=""))
+  }
+  oc
 }

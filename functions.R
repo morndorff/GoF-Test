@@ -197,3 +197,30 @@ Bi_Var_PIT_ks <- function(x,y, alpha=.05){
   names(reject) <- "REJECT NULL?"
   return(list("Reject Null?"=reject, "Pvals"=c(pval_x,pval_y)))
 }
+
+scale_two_sample <- function(x,y){
+  max_x <- max(x)
+  max_y <- max(y)
+  min_x <- min(x)
+  min_y <- min(y)
+  max_com <- max(x,y)
+  min_com <- min(x,y)
+  range_x <- max_x - min_x
+  range_y <- max_y - min_y
+  range_com <- max_com - min_com
+  if(range_x > range_y){
+    scaled_x <- (x - min_com) / range_com
+    scaled_y <- (y - min_com) / range_com
+  } else{
+    scaled_x <- (x - min_com) / range_com
+    scaled_y <- (y - min_com) / range_com
+  }
+#   if(range_x > range_y){
+#     scaled_x <- (x - min(x)) / range_x
+#     scaled_y <- (y - min(x)) / range_x
+#   } else{
+#     scaled_x <- (x - min(y)) / range_y
+#     scaled_y <- (y - min(y)) / range_y
+#   }
+  return(list(scaled_x, scaled_y))
+}
