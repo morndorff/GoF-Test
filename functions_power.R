@@ -70,6 +70,30 @@ ks.res <- function(x, y, ..., alternative = c("two.sided", "less", "greater"), e
     return(RVAL)
 }
 
+ad.res <- function(x,y, ...){
+  if(is.numeric(y)) stop("Haven't Done Two Sample Yet")
+  
+  # One Sample
+  if (is.list(y)) 
+    y <- names(y)
+  if (is.function(y)) 
+    funname <- as.character(substitute(y))
+  if (is.character(y)) 
+    funname <- y
+  y <- get(funname, mode = "function", envir = parent.frame())
+  if (!is.function(y)) 
+    stop("'y' must be numeric or a function or a string naming a valid function")
+  x <- sort(x)
+  n <- length(x)
+  if (n < 8) 
+    stop("sample size must be greater than 7")
+  logp1 <- pnorm((x - mean(x))/sd(x), log.p = TRUE)
+  logp2 <- pnorm(-(x - mean(x))/sd(x), log.p = TRUE)
+  h <- (2 * seq(1:n) - 1) * (logp1 + rev(logp2))
+  STAT <- -n - mean(h)
+  return(STAT)
+}
+
 # K test (Just outputting statistic)
 ks.res.simp <- function(x, y, ..., alternative = c("two.sided", "less", "greater"), 
     exact = NULL) {

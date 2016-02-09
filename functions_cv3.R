@@ -1,15 +1,8 @@
 
-Even_Odd_Grid_After <- function(x, y, ...,
+Even_Odd_Grid_After <- function(x, y, ..., lambda=FALSE, doplot=F, 
                                 grid_fine=10, dyadic_after=TRUE, 
-                                peek_scaling=TRUE, plotEstFun=F, doplot=F,
-                                debug=F, diag=F){ 
+                                peek_scaling=TRUE, plotEstFun=F){ 
   # Use dyadic_after if the test wil transform to a dyadic sample size later
-  
-  # grid_fine: How fine the cross validation grid is
-  # dyadic_after: Making the lambda value smaller or larger 
-  # peek_scaling: Effects our scaling. Do we look at all the data when we scale,
-  # or do we just look at the in sample data
-  # If true, we do, if false we don't
   
   # This version peaks at the even and odd limits and expands the function appropriately
   # The previous version of the function applies the gridding with all the data
@@ -27,7 +20,6 @@ Even_Odd_Grid_After <- function(x, y, ...,
   y <- get(funname, mode = "function", envir = parent.frame())
   if (!is.function(y)) 
     stop("'y' must be numeric or a function or a string naming a valid function")
-  
   # Getting the difference between the ecdf(X) and its CDF
   lenx <- length(x)
   x <- sort(x)
@@ -35,8 +27,6 @@ Even_Odd_Grid_After <- function(x, y, ...,
   F.x <- F.x(x)
   F.x <- F.x - (.5 /lenx)
   Dif_X <- F.x - y(x, ...) # remove
-  
-  # Split Samples
   
   # Split the Samples
   if(lenx %% 2==0){
@@ -79,14 +69,11 @@ Even_Odd_Grid_After <- function(x, y, ...,
       plot(even_data_scaled, dif_even, 
            main="Peaking at scaling", ylab="Fhat(x)-F(x)",
            xlim=c(0,1))
-      abline( h=0)
-      
       plot(odd_data_scaled, dif_odd, 
            main="Peaking at scaling", ylab="Fhat(x)-F(x)",
            xlim=c(0,1))
-      abline( h=0)
-      
     }
+
   } else{
     even_data_scaled <- (data_even - min(data_even)) / (max(data_even)- min(data_even))
     odd_data_scaled <- (data_odd - min(data_odd)) / (max(data_odd)- min(data_odd))
@@ -95,26 +82,14 @@ Even_Odd_Grid_After <- function(x, y, ...,
       plot(even_data_scaled, dif_even, 
            main="No Peaking at odd data", ylab="Fhat(x)-F(x)",
            xlim=c(0,1))
-      abline(h=0)
       plot(odd_data_scaled, dif_odd, 
            main="No Peaking at even data", ylab="Fhat(x)-F(x)",
            xlim=c(0,1))
-      abline( h=0)
     }
-  }
-  
-  if(debug){
-    return(list("Scaled Even Data"=even_data_scaled, 
-                "Scaled Odd Data"=odd_data_scaled,
-                "Even Dif"=dif_even,
-                "Odd Dif"= dif_odd))
+
   }
   
 
-  
-  # Big Assumption Here
-  
-  
   x_grid_e <- makegrid(t=even_data_scaled, y=dif_even)
   data_grid_e <- x_grid_e$gridt
   dif_grid_e <- x_grid_e$gridy
@@ -134,26 +109,86 @@ Even_Odd_Grid_After <- function(x, y, ...,
          xlim=c(0,1))
   }
   
-
   
-  
+  Find_Lambda <- function(in_sample_dif, out_of_sample_dif, in_sample_data, out_of_sample_data){
+    # Decompose input function
+    model_wd <- wd(in_sample_dif, filter.number=8, family="DaubLeAsymm")
+    
+    # Make lambda grid
+    Largest_Level <- nlevelsWT(model_wd)
+    testfun <- Vectorize(accessD.wd, "level")
+    details <- unlist(testfun(model_wd, level=1:(Largest_Level-1)))
+    scaling <- accessC(model_wd, level=1)
+    Largest_Coefficient <- max(abs(c(details, scaling)))
+    Smallest_Coefficient <- min(abs(c(details, scaling)))
+    lambda_grid <- seq(Smallest_Coefficient, 
+                       Largest_Coefficient, length.out=grid_fine)
+    
+    # Making sure last threshold thresholds everything
+    lambda_grid <- append(lambda_grid, Largest_Coefficient + .1*sd(lambda_grid))
+    
+    # For values in the lambda grid,
+    # Perform thresholding, reconstruction, and MSE comparison
+    MSE <- vector(length=length(lambda_grid))
+    for(i in seq_along(lambda_grid)){
+      # Thresholding
+      thresh_test <- threshold(model_wd, type="hard", policy="manual", 
+                               value=lambda_grid[i], levels=0:(nlevelsWT(model_wd)-1))#, verbose=TRUE)
+      
+      # Reconstruction
+      reconstructed_fun <- wr(thresh_test)
+      
+      # Here, we estimate the odd from the even, and vice versa
+      
+      # First, we need to do some endpoint correction
+      # Then, we take our estimate as the midpoint between entries
+      ma <- function(x,n=2){filter(x,rep(1/n,n), sides=2)}
+      if(min(in_sample_data) > min(out_of_sample_data)){
+        Dif_First <- reconstructed_fun[1] / 2 # Take midpoint  
+        estimated_fun <- ma(reconstructed_fun)
+        estimated_fun <- c(Dif_First, head(estimated_fun, -1))
+        
+      }else{
+        #Interpolate maximum
+        Dif_End <- tail(reconstructed_fun , 1) / 2
+        estimated_fun <- ma(reconstructed_fun)
+        estimated_fun <- c(head(estimated_fun, -1), Dif_End)
+      }
+      
+      # calculating MSE
+      errors <- estimated_fun - out_of_sample_dif
+      MSE[i] <- sum(errors^2)
+      if(plotEstFun){
+        #layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE))
+        par(mfrow=c(2,1))
+        plot(in_sample_dif, type="l",
+             main=paste("Lambda Postion=", i/length(lambda_grid)))
+        points(estimated_fun, type="l", col="red")
+        plot(out_of_sample_dif, type="l", main=paste("MSE is ", round(MSE[i],3),  "Odd in Red"))
+        lines(estimated_fun,type="l", col="red")
+      }
+      
+      
+    }
+    if(doplot){
+      par(mfrow=c(1,1))
+      plot(lambda_grid, MSE)
+    }
+    opt_lambda <- lambda_grid[which.min(MSE)]
+    return(list("MSE Vector"= MSE, "Optimal Lambda"= opt_lambda))
+  }
   Odd_OOS <- Find_Lambda(in_sample_dif = dif_grid_e, out_of_sample_dif = dif_grid_o,
-                         in_sample_data = data_grid_e, out_of_sample_data = data_grid_o,
-                         grid_fine=grid_fine, plotEstFun=plotEstFun, doplot=doplot)
+                         in_sample_data = data_grid_e, out_of_sample_data = data_grid_o)
   Odd_MSE <- Odd_OOS[["MSE Vector"]]
   Odd_Lambda <- Odd_OOS[["Optimal Lambda"]]
-  
   Even_OOS <- Find_Lambda(in_sample_dif = dif_grid_o, out_of_sample_dif =dif_grid_e,
-                          in_sample_data = data_grid_o, out_of_sample_data = data_grid_e,
-                          grid_fine=grid_fine, plotEstFun=plotEstFun, doplot=doplot)
+                          in_sample_data = data_grid_o, out_of_sample_data = data_grid_e)
   Even_MSE <- Even_OOS[["MSE Vector"]]
   Even_Lambda <- Even_OOS[["Optimal Lambda"]]
-  
   Chosen_Lambda <- mean(c(Even_Lambda, Odd_Lambda))
   # This Chosen Lambda value needs to be adjusted to 
   # account for the fact that the even and odd samples
   # are of sample size n/2
-  
   if(dyadic_after){
     # If the sample is going to be adjusted down or up to a
     # dyadic power of 2 afterwards, we should account for that
@@ -162,12 +197,7 @@ Even_Odd_Grid_After <- function(x, y, ...,
   } else{
     Adjusted_Lambda <- (1/ sqrt((1 - (log(2)/log(lenx))))) * Chosen_Lambda
   }
-  if(diag){
-    return(list("Even MSE"=Even_MSE, "Odd MSE"=Odd_MSE, 
-                "Even Lambda"=Even_Lambda, "Odd Lambda"= Odd_Lambda,
-                "Chosen Threshold (Lambda)"= Chosen_Lambda,
-                "Sample Size Adjusted Threshold"=Adjusted_Lambda))
-  }
+  
   return(list("Even MSE"=Even_MSE, "Odd MSE"=Odd_MSE, 
               "Even Lambda"=Even_Lambda, "Odd Lambda"= Odd_Lambda,
               "Chosen Threshold (Lambda)"= Chosen_Lambda,
@@ -177,7 +207,7 @@ Even_Odd_Grid_After <- function(x, y, ...,
 
 
 
-Threshold_Test <- function(x, y, ..., grid=10, Chosen_Threshold, spacing=F){
+Threshold_Test <- function(x, y, ..., grid=10, Chosen_Threshold){
   # Wrapper function.
   # uses wd for convenience. Change this later to use other wavelet basis
   
@@ -201,15 +231,10 @@ Threshold_Test <- function(x, y, ..., grid=10, Chosen_Threshold, spacing=F){
 #   library(waveslim)
 #   F.dwt <- dwt(F.x(z) - y(z))
 #   coefs <- unlist(F.dwt)
-  if(spacing){
-    library(wavethresh)
-    F.x <- ecdf(x)
-    model_wd <- wd(F.x(x) - y(x, ...),  filter.number=8, family="DaubLeAsymm")
-  }else{
-    model_wd <- wd(F.x(z) - y(z, ...),  filter.number=8, family="DaubLeAsymm")
-  }
-
-
+  
+  library(wavethresh)
+  model_wd <- wd(F.x(z) - y(z, ...),  filter.number=8, family="DaubLeAsymm")
+  # Make lambda grid
   Largest_Level <- nlevelsWT(model_wd)
   testfun <- Vectorize(accessD.wd, "level")
   details <- unlist(testfun(model_wd, level=1:(Largest_Level-1)))
@@ -223,86 +248,6 @@ Threshold_Test <- function(x, y, ..., grid=10, Chosen_Threshold, spacing=F){
   STAT <- sum(threshold^2)
   STAT
 }
-
-
-
-Find_Lambda <- function(in_sample_dif, out_of_sample_dif, 
-                        in_sample_data, out_of_sample_data,
-                        grid_fine, plotEstFun, doplot){
-  # internal function for cross validation. Not to be used 
-  
-  # Input: A 'in sample' x and y and an out of sample x and y
-  # Output: A list containing the MSE's used as well as the optimal lambda value found
-  
-  
-  # Decompose input function
-  model_wd <- wd(in_sample_dif, filter.number=8, family="DaubLeAsymm")
-  
-  # Make lambda grid
-  Largest_Level <- nlevelsWT(model_wd)
-  testfun <- Vectorize(accessD.wd, "level")
-  details <- unlist(testfun(model_wd, level=1:(Largest_Level-1)))
-  scaling <- accessC(model_wd, level=1)
-  Largest_Coefficient <- max(abs(c(details, scaling)))
-  Smallest_Coefficient <- min(abs(c(details, scaling)))
-  lambda_grid <- seq(Smallest_Coefficient, 
-                     Largest_Coefficient, length.out=grid_fine)
-  
-  # Making sure last threshold thresholds everything
-  lambda_grid <- append(lambda_grid, Largest_Coefficient + .1*sd(lambda_grid))
-  
-  # For values in the lambda grid,
-  # Perform thresholding, reconstruction, and MSE comparison
-  MSE <- vector(length=length(lambda_grid))
-  for(i in seq_along(lambda_grid)){
-    # Thresholding
-    thresh_test <- threshold(model_wd, type="hard", policy="manual", 
-                             value=lambda_grid[i], levels=0:(nlevelsWT(model_wd)-1))#, verbose=TRUE)
-    
-    # Reconstruction
-    reconstructed_fun <- wr(thresh_test)
-    
-    # Here, we estimate the odd from the even, and vice versa
-    
-    # First, we need to do some endpoint correction
-    # Then, we take our estimate as the midpoint between entries
-    ma <- function(x,n=2){filter(x,rep(1/n,n), sides=2)}
-    if(min(in_sample_data) > min(out_of_sample_data)){
-      Dif_First <- reconstructed_fun[1] / 2 # Take midpoint  
-      estimated_fun <- ma(reconstructed_fun)
-      estimated_fun <- c(Dif_First, head(estimated_fun, -1))
-      
-    }else{
-      #Interpolate maximum
-      Dif_End <- tail(reconstructed_fun , 1) / 2
-      estimated_fun <- ma(reconstructed_fun)
-      estimated_fun <- c(head(estimated_fun, -1), Dif_End)
-    }
-    
-    # calculating MSE
-    errors <- estimated_fun - out_of_sample_dif
-    MSE[i] <- sum(errors^2)
-    
-    if(plotEstFun){
-      #layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE))
-      par(mfrow=c(2,1))
-      plot(in_sample_dif, type="l",
-           main=paste("Lambda Postion=", i/length(lambda_grid)))
-      points(estimated_fun, type="l", col="red")
-      plot(out_of_sample_dif, type="l", main=paste("MSE is ", round(MSE[i],3),  "Odd in Red"))
-      lines(estimated_fun,type="l", col="red")
-    }
-    
-    
-  }
-  if(doplot){
-    par(mfrow=c(1,1))
-    plot(lambda_grid, MSE)
-  }
-  opt_lambda <- lambda_grid[which.min(MSE)]
-  return(list("MSE Vector"= MSE, "Optimal Lambda"= opt_lambda))
-}
-
 
 
 # 

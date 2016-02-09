@@ -9,19 +9,10 @@ source("functions_SPS.R")
 source("functions_MC.R")
 source("functions_fourier.R")
 source("functions_cv.R")
+source("functions_sp.R")
+source("functions_uniform.R")
 
-quad.area <- function(x1, x2, y1, y2) {
-    t1 <- tri.area(x1, x2, y1)
-    t2 <- tri.area(x2, y1, y2)
-    area <- t1 + t2
-    return(area)
-}
-tri.area <- function(x, y, z) {
-    area <- 0.5 * abs((x[1] - z[1]) * (y[2] - x[2]) - (x[1] - y[1]) * (z[2] - x[2]))
-    return(area)
-}
-
-perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, diag = FALSE, 
+perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 1501, diag = FALSE, 
                       exact = FALSE, out=FALSE, do.plot=FALSE, ...) {
   #Args: 
   # x: numeric vector
@@ -115,9 +106,9 @@ perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 2001, dia
     p.val <- sum(abs(ts.random) >= abs(ts.obs)) / num.perm
     c.val <- quantile(ts.random, probs = 0.95)
     if (do.plot == TRUE){
-      hplot <- hist(ts.random, prob=TRUE, main="Histogram of Permuted Test Statistic (line=Observed TS)")
+      hplot <- hist(ts.random, prob=TRUE, main="Histogram of Permuted Test Statistic (red=Observed TS)")
       hplot
-      segments(ts.obs,0,x1=ts.obs,y1=max(hplot$density))
+      segments(ts.obs,0,x1=ts.obs,y1=max(hplot$density), col="red")
     }
     if (diag == TRUE) {
       # 1st value of output is p value, 2nd is 95% critical value, 3rd is the actual test
@@ -220,4 +211,15 @@ scale_two_sample <- function(x,y){
 #     scaled_y <- (y - min(y)) / range_y
 #   }
   return(list(scaled_x, scaled_y))
+}
+
+quad.area <- function(x1, x2, y1, y2) {
+  t1 <- tri.area(x1, x2, y1)
+  t2 <- tri.area(x2, y1, y2)
+  area <- t1 + t2
+  return(area)
+}
+tri.area <- function(x, y, z) {
+  area <- 0.5 * abs((x[1] - z[1]) * (y[2] - x[2]) - (x[1] - y[1]) * (z[2] - x[2]))
+  return(area)
 }
