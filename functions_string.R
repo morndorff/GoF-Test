@@ -19,7 +19,7 @@ dist.conv <- function(funname, type) {
 
 dist.conv.str <- function(funname, type) {
     # Getting a function name and converting it to a distribution function or random
-    # variable genderation 
+    # variable generation 
     # Input funname: a function name, such as qnorm 
     # type: any character either p (returns pnorm) or r (returns rnorm) 
     # Returns: qnorm -> rnorm, qnorm -> pnorm, etc.

@@ -11,6 +11,7 @@ source("functions_fourier.R")
 source("functions_cv.R")
 source("functions_sp.R")
 source("functions_uniform.R")
+source("functions_qiu.R")
 
 perm.test <- function(x, y, distops = NULL, f, fops = NULL, num.perm = 1501, diag = FALSE, 
                       exact = FALSE, out=FALSE, do.plot=FALSE, ...) {

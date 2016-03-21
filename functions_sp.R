@@ -2,7 +2,8 @@
 SP_Threshold_Selection <- function(x, y, ...,
                                 grid_fine=15, dyadic_after=TRUE, 
                                 peek_scaling=TRUE, plotEstFun=F, doplot=F,
-                                debug=F, diag=F, plotThresh=F, threshscale=T, includescale=T){
+                                debug=F, diag=F, plotThresh=F, includescale=F,
+                                minthreshlevel=2, wf="haar"){
   # includescale: threshold lowest level scaling coefficent?
   # threshscale: Do we want to threshold the detail functions?
   # grid_fine: How fine the cross validation grid is
@@ -10,8 +11,7 @@ SP_Threshold_Selection <- function(x, y, ...,
   # peek_scaling: Effects our scaling. Do we look at all the data when we scale,
   # or do we just look at the in sample data
   # If true, we do, if false we don't
-  if(!includescale) stop("have to include scaling right now")
-  
+
   # Only works with dyadic sample size  
   require(wavethresh)
   if(is.numeric(y)) stop("Haven't Done Two Sample Yet")
@@ -63,16 +63,18 @@ SP_Threshold_Selection <- function(x, y, ...,
   # Getting Odd and Even Lambda -----
   Odd_OOS <- Find_Lambda_SP(in_sample_dif = si_even, out_of_sample_dif = si_odd,
                          grid_fine=grid_fine, plotEstFun=plotEstFun, doplot=doplot,
-                         insamplefirst=F, plotThresh=plotThresh, threshscale=threshscale,
-                         includescale=includescale)
+                         insamplefirst=F, plotThresh=plotThresh, 
+                         includescale=includescale, minthreshlevel=minthreshlevel,
+                         wf=wf)
   if(plotThresh) return(Odd_OOS)
   Odd_MSE <- Odd_OOS[["MSE Vector"]]
   Odd_Lambda <- Odd_OOS[["Optimal Lambda"]]
-  
+
   Even_OOS <- Find_Lambda_SP(in_sample_dif = si_odd, out_of_sample_dif =si_even,
                           grid_fine=grid_fine, plotEstFun=plotEstFun, doplot=doplot,
-                          insamplefirst=T, plotThresh=plotThresh, threshscale=threshscale,
-                          includescale=includescale)
+                          insamplefirst=T, plotThresh=plotThresh, 
+                          includescale=includescale, minthreshlevel=minthreshlevel,
+                          wf=wf)
   Even_MSE <- Even_OOS[["MSE Vector"]]
   Even_Lambda <- Even_OOS[["Optimal Lambda"]]
 
@@ -83,8 +85,7 @@ SP_Threshold_Selection <- function(x, y, ...,
   # account for the fact that the even and odd samples
   # are of sample size n/2
   Average_Relative_Position <- mean(c(Even_OOS[["Position"]], Odd_OOS[["Position"]]))
-  
-  
+
   if(dyadic_after){
     # If the sample is going to be adjusted down or up to a
     # dyadic power of 2 afterwards, we should account for that
@@ -97,78 +98,71 @@ SP_Threshold_Selection <- function(x, y, ...,
     return(list("Even MSE"=Even_MSE, "Odd MSE"=Odd_MSE, 
                 "Even Lambda"=Even_Lambda, "Odd Lambda"= Odd_Lambda,
                 "Chosen Threshold (Lambda)"= Chosen_Lambda,
-                "Sample Size Adjusted Threshold"=Adjusted_Lambda))
+                "Sample Size Adjusted Threshold" = Adjusted_Lambda
+                ))
   }
   return(list("Even MSE"=Even_MSE, "Odd MSE"=Odd_MSE, 
               "Even Lambda"=Even_Lambda, "Odd Lambda"= Odd_Lambda,
               "Chosen Threshold (Lambda)"= Chosen_Lambda,
               "Sample Size Adjusted Threshold"=Adjusted_Lambda,
               "Relative Position Chosen"=Average_Relative_Position))
-  
 }
 
 Find_Lambda_SP <- function(in_sample_dif, out_of_sample_dif, 
-                        grid_fine, plotEstFun, doplot, insamplefirst, plotThresh, threshscale, includescale){
+                        grid_fine, plotEstFun, doplot, insamplefirst, plotThresh, includescale,
+                        minthreshlevel=2, wf="haar"){
   # internal function for cross validation. Not to be used 
   
   # Input: A 'in sample' x and y and an out of sample x and y
   # Output: A list containing the MSE's used as well as the optimal lambda value found
 
-  
+  # minthreshlevel - At what level > 0  do we want to threshold the detail coefficients
+  # includescale - Include the scaling coefficient in the thresholding? Only an option if minthreshlevel=0 
+
+  if(includescale && minthreshlevel!=0) stop("Don't want to threshold scale function and only top level details")
   # Decompose input function
-  model_wd <- wd(in_sample_dif, filter.number=8, family="DaubLeAsymm") #la8
-
-  if(threshscale){
-    Largest_Level <- nlevelsWT(model_wd)
-    testfun <- Vectorize(accessD.wd, "level")
-    details <- unlist(testfun(model_wd, level=0:(Largest_Level-1)))
-    if(includescale) scaling <-  accessC(model_wd, level=0)
-    Largest_Coefficient <- max(abs(c(details, scaling))) 
-    Smallest_Coefficient <- min(abs(c(details, scaling)))
-    lambda_grid <- seq(Smallest_Coefficient, 
-                       Largest_Coefficient, length.out=grid_fine)
-
-  } else{
-  # Make lambda grid
+  if(wf=="la8") model_wd <- wd(in_sample_dif, filter.number=8, family="DaubLeAsymm") #la8
+  if(wf=="haar") model_wd <- wd(in_sample_dif, filter.number=1, family="DaubExPhase") #haar
+  
   Largest_Level <- nlevelsWT(model_wd)
   testfun <- Vectorize(accessD.wd, "level")
-  details <- unlist(testfun(model_wd, level=1:(Largest_Level-1)))
-  if(includescale) scaling <- accessC(model_wd, level=0)
-  #scaling <- accessC(model_wd, level=1)
-  Largest_Coefficient <- max(abs(c(details, scaling)))
+  details <- unlist(testfun(model_wd, level=minthreshlevel:(Largest_Level-1)))
+  if(includescale){
+    scaling <-  accessC(model_wd, level=0)
+  }else{
+    scaling <- NULL
+  }
+  Largest_Coefficient <- max(abs(c(details, scaling))) 
   Smallest_Coefficient <- min(abs(c(details, scaling)))
+  
   lambda_grid <- seq(Smallest_Coefficient, 
                      Largest_Coefficient, length.out=grid_fine)
-  }
+  
+  
   # Making sure last threshold thresholds everything
   # lambda_grid <- append(lambda_grid, Largest_Coefficient + .1*sd(lambda_grid))
   
   # For values in the lambda grid,
   # Perform thresholding, reconstruction, and MSE comparison
-  MSE <- vector(length=length(lambda_grid))
-  Thresh_list <- vector(mode="list", length=length(lambda_grid))
+  MSE <- vector(length=grid_fine)
+  #Percent_Thresholded <- vector(length=grid_fine)
+  Thresh_list <- vector(mode="list", length=grid_fine)
   for(i in seq_along(lambda_grid)){
     # Thresholding
-    if(threshscale){
-      thresh_test <- threshold(model_wd, type="hard", policy="manual", 
-                               value=lambda_grid[i], levels=0:(nlevelsWT(model_wd)-1) )#, verbose=TRUE)
-      if(includescale){
-        Lowest_C <- abs(accessC(thresh_test, level=0))
-        if(Lowest_C <= lambda_grid[i]){
-          thresh_test <- putC(thresh_test, level=0, v=0)
-        }
+    thresh_test <- threshold(model_wd, type="hard", policy="manual", 
+                             value=lambda_grid[i], 
+                             levels=minthreshlevel:(nlevelsWT(model_wd)-1) )#, verbose=TRUE)
+    # Percentage of Eligible Detail Coefficients Discarded 
+    # details <- unlist(testfun(thresh_test, level=minthreshlevel:(Largest_Level-1)))
+    # Percent_Thresholded[i] <- sum(details == 0) /length(details)
+    
+    if(includescale){
+      Lowest_C <- abs(accessC(thresh_test, level=0))
+      if(Lowest_C <= lambda_grid[i]){
+        thresh_test <- putC(thresh_test, level=0, v=0)
       }
     }
-    else{
-      thresh_test <- threshold(model_wd, type="hard", policy="manual", 
-                               value=lambda_grid[i], levels=1:(nlevelsWT(model_wd)-1)) #, verbose=TRUE)
-      if(includescale){
-        Lowest_C <- abs(accessC(thresh_test, level=0))
-        if(Lowest_C < lambda_grid[i]){
-          thresh_test <- putC(thresh_test, level=0, v=0)
-        }
-      }
-    }
+  
     # Reconstruction
     reconstructed_fun <- wr(thresh_test)
     # Here, we estimate the odd from the even, and vice versa
@@ -213,21 +207,54 @@ Find_Lambda_SP <- function(in_sample_dif, out_of_sample_dif,
     plot(lambda_grid, MSE)
   }
   if(plotThresh) return(Thresh_list)
+  # PThresh_Chosen <- Percent_Thresholded[which.min(MSE)]
   Position <- which.min(MSE)
   opt_lambda <- lambda_grid[Position]
-  Relative_Position <- Position/length(lambda_grd)
+  Relative_Position <- Position/length(lambda_grid)
   return(list("MSE Vector"= MSE, "Optimal Lambda"= opt_lambda, "Position"=Relative_Position))
 }
 
-SP_Test<- function(x, y, ..., grid=10, Chosen_Threshold, spacing=F, doplot=F, threshscale=T, includescale=T){
+Easy_SP <- function(x, y, ...){
+  
+  if (is.list(y)) 
+    y <- names(y)
+  if (is.function(y)) 
+    funname <- as.character(substitute(y))
+  if (is.character(y)) 
+    funname <- y
+  y <- get(funname, mode = "function", envir = parent.frame())
+  if (!is.function(y)) 
+    stop("'y' must be numeric or a function or a string naming a valid function")
+  x <- sort(x)
+  n <- length(x)
+  i <- 1:n
+  sp <- (2/pi) * asin(sqrt((i-.5)/n))
+  si <- (2/pi) * asin(sqrt(y(x, ...)))
+  z <- sp-si
+  STAT <- sum(z)
+}
+
+Easy_SP_Two <- function(x, y){
+  
+  
+}
+
+SP_Test<- function(x, y, ...,  Chosen_Threshold, 
+                   doplot=F, includescale=F, minthreshlevel=2,
+                   wf="haar", diag=F, multiple=F){
+  
+  
+  # includescale: When doing thresholding, do we include the lowest level scaling
+  # coefficient? This may not make much sense if minthreshlevel is not equal to 1
+  
+  # minthreshlevel: What detail level do we want to threshold to? Acceptable values
+  # are from 0 to nlevelsWT()-1
+  
+  # wf: wavelet basis. Acceptable options for now are "haar" and "la8"
+  
+  # diag breaks the function for use in other functions
   # Wrapper function.
   # uses wd for convenience. Change this later to use other wavelet basis
-  
-  # Carry out the thresholding, using a supplied value of 
-  # Chosen_Threshold
-  if(!threshscale) stop("Needs Update!")
-  if(!includescale) stop("Needs Update!")
-  
   
   if (is.list(y)) 
     y <- names(y)
@@ -245,7 +272,7 @@ SP_Test<- function(x, y, ..., grid=10, Chosen_Threshold, spacing=F, doplot=F, th
   i <- 1:n
   sp <- (2/pi) * asin(sqrt((i-.5)/n))
   si <- (2/pi) * asin(sqrt(y(x, ...)))
-  # print(si)
+
   if(doplot){
     par(mfrow=c(2,1))
     plot(sp,si, xlim=c(0,1), ylim=c(0,1), main="SP-Plot")
@@ -253,24 +280,65 @@ SP_Test<- function(x, y, ..., grid=10, Chosen_Threshold, spacing=F, doplot=F, th
     plot(sp-si)
   }
   z <- sp-si
-  #   library(waveslim)
-  #   F.dwt <- dwt(F.x(z) - y(z))
-  #   coefs <- unlist(F.dwt)
 
   library(wavethresh)
-
-  model_wd <- wd(z, filter.number=8, family="DaubLeAsymm")
+  if(wf=="haar") model_wd <- wd(z, filter.number=1, family="DaubExPhase")
+  if(wf=="la8") model_wd <- wd(z, filter.number=8, family="DaubLeAsymm")
 
   Largest_Level <- nlevelsWT(model_wd)
   testfun <- Vectorize(accessD.wd, "level")
-  details <- unlist(testfun(model_wd, level=0:(Largest_Level-1)))
-  scaling <- accessC(model_wd, level=0)
-  coefs <- c(details, scaling)
+  details <- unlist(testfun(model_wd, level=minthreshlevel:(Largest_Level-1)))
+
+  if(includescale){
+    scaling <-scaling <- accessC(model_wd, level=0)
+  }else{
+    scaling <- NULL
+  }
+  coefs <- c(details, scaling) # The vector of wavelet coefficients
+  # if includescale=T, then it includes the scaling coefficient
+  # Only includes detail coefficients geq to minthreshlevel
   
-  threshold <- sapply(coefs, function(x){
+  thresholded_details <- sapply(coefs, function(x){
     if(abs(x) < Chosen_Threshold) x <- 0
     x
   })
+  
+  #### Remaining coefficients
+  if(minthreshlevel >= 1){
+    remaining_details <- unlist(testfun(model_wd, level=0:(minthreshlevel-1)))
+  }else if(minthreshlevel==0){
+    remaining_details <- NULL
+  }else{
+    stop("Something has gone wrong with minthreshlevel")
+  }
+  if(!includescale) remaining_details <- append(remaining_details, accessC(model_wd, level=0))
+  # option to return coefficients
+  # if 
+  
+  if(multiple){ 
+    print("This returns all the wavelet coefficients -- when option includescale is TRUE, it returns 
+the scaling coefficient as well. When includescale is FALSE, it does not")
+    return(c(coefs, remaining_details))
+  }
+  
+  threshold <- c(thresholded_details, remaining_details) 
+  
   STAT <- sum(threshold^2)
+
+  if(diag){
+    thresh_test <- threshold(model_wd, type="hard", policy="manual", 
+                             value=Chosen_Threshold, levels=minthreshlevel:(nlevelsWT(model_wd)-1))
+
+    details <- unlist(testfun(thresh_test, level=minthreshlevel:(Largest_Level-1)))
+    Percent_Thresholded <- sum(details == 0) /length(details)
+    reconstructed_dif <- wr(thresh_test)
+    par(mfrow=c(1,2))
+    plot(z, main="Actual", ylab="sp-si")
+    plot(reconstructed_dif, main="Reconstructed")
+    plot(z, main="Actual", type="l", ylab="sp-si")
+    plot(reconstructed_dif, main="Reconstructed", type="l")
+
+    return(list("Test Statistic"=STAT, "Percent of Eligible Coefficients Thresholded"=Percent_Thresholded)) 
+  }
   STAT
 }
